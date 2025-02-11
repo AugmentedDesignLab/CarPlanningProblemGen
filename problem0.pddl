@@ -1,26 +1,27 @@
-(define (problem driving-scenario)
-  (:domain driving-behaviors)
+(define (problem test_scenario)
+  (:domain autonomous_vehicle_testing)
   (:objects
-    car1 - vehicle
-    trafficLight1 - traffic-light
-    pedestrian1 - pedestrian
-    wetRoad - road-condition
-    foggyCondition - visibility-condition
+    ego_vehicle - vehicle
+    agent1 agent2 - agent
   )
   (:init
-    (red-light-ahead car1 trafficLight1)
-    (within-distance car1 5)
-    (pedestrian-crossing car1 pedestrian1)
-    (within-distance car1 10)
-    (wet-road wetRoad)
-    (foggy-visibility foggyCondition)
+    (vehicle ego_vehicle)
+    (agent agent1)
+    (agent agent2)
+    (safe_distance ego_vehicle agent1)
+    (safe_distance ego_vehicle agent2)
+    (clear_path ego_vehicle)
+    (speed_limit ego_vehicle)
+    (lane_centered ego_vehicle)
+    (ahead ego_vehicle agent1)
+    (behind ego_vehicle agent2)
   )
   (:goal
     (and
-      (velocity-zero car1)
-      (negative-acceleration car1)
-      (speed-reduced car1 20)
-      (speed-reduced car1 30)
+      (safe_distance ego_vehicle agent1)
+      (safe_distance ego_vehicle agent2)
+      (clear_path ego_vehicle)
+      (lane_centered ego_vehicle)
     )
   )
 )

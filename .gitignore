@@ -1,0 +1,5 @@
+apla-planner/*
+generated_pddls/*
+parsed_womdr_data/*
+pddl-examples/*
+*.pddl

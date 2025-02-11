@@ -1,229 +1,584 @@
-import unified_planning as up
-from unified_planning.io import PDDLReader
-from unified_planning.shortcuts import OneshotPlanner
-from unified_planning.plot import plot_sequential_plan
 import guidance
 import sys
 import subprocess
+import os
+import json
+from pathlib import Path
+import pddlpy
 
 from guidance import models, gen, user, assistant, system
-import basic_scenario_gpt
-import parse_scenario_womd
+from openai import OpenAI
 
-scenario_data = parse_scenario_womd.new_data_no_interactions
-scenario = basic_scenario_gpt.generate_scenario_actions(concepts=basic_scenario_gpt.generate_scenario_concepts(number_of_concepts=3, granularity=6, scenario_data=scenario_data), granularity=2)
+def retrieve_womdr_domain_problem_data():
 
-gpt = models.OpenAI(model="gpt-4o", echo=False)
-solution_found = False
+    parsed_womdr_files = os.listdir("parsed_womdr_data/")
+    scenario_domain_problem_data = {}
 
-while(True):
+    for i in parsed_womdr_files:
+        with open("parsed_womdr_data/"+i, 'r') as scenario_file:
+            scenario_data = json.load(scenario_file) 
+            for key in scenario_data.keys():
+                scenario_domain_problem_data.setdefault(i[:-5], {
+                    "Context": ""
+                })
+                scenario_domain_problem_data[i[:-5]]["Context"] = scenario_data[key]["Context"]
+                for interaction_key in scenario_data[key]["Interactions"].keys():
+                    scenario_domain_problem_data[i[:-5]].setdefault("Interactions", {})
+                    scenario_domain_problem_data[i[:-5]]["Interactions"].setdefault(interaction_key, {
+                    "problem_data": "",
+                    "answer_data": ""
+                    }) 
+                    scenario_domain_problem_data[i[:-5]]["Interactions"][interaction_key]["problem_data"] = scenario_data[key]["Interactions"][interaction_key]["reference_question"]
+                    scenario_domain_problem_data[i[:-5]]["Interactions"][interaction_key]["answer_data"] = scenario_data[key]["Interactions"][interaction_key]["reference_answer"]
+    #print(scenario_domain_problem_data)        
+    return scenario_domain_problem_data
 
-    with system():
-        lm = gpt
+def generate_pddl_with_syntax_check_o1():
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    with user():
-        lm += f"""
-        We need you to write specific driving behaviors to accomplish certain goals. A behavior is defined as actions taken in response to certain conditions. Conditions are provided as an environment state. 
-        Think about some states by yourself that you believe is necessary. 
-        Vehicles navigate in the action space and the state space provided to them.
-
-        Now generate a PDDL domain file for the scenario: {scenario}. Domain file only only only for now.
-        
-        Think about the STRIPS PDDL for different popular domains such as gripper and sokoban.
-        Verify whether it all the suggested states and actions makes sense and is correct.
-        Then, if it feels correct, write it down as a PDDL domain file. I only only want the PDDL domain file contents.
-        
-        Keep things simple and clear. Do not repeat names. Do not repeat names. Do not redefine anything. Ensure that everything is very very clear and correct. Check and double check correctness.
-        Do not write anything else other than what is asked. Only Only Only write what has been asked. Do not write any ``` statement as well. Only write what has been asked. Only write what has been asked.
-        """
-
-    with assistant():
-        domain_gen_status=True
-        while(domain_gen_status):
-            try: 
-                lm += gen("domain", temperature=0.5)
-                break
-            except:
-                continue    
-        print("Domain draft has been generated!")
-
-    with open("domain0.pddl", "w", encoding='utf-8') as file:
-        file.write(lm["domain"]) # We want to read the article as a single string, so that we can feed it to gpt.
-        file.close()
-
-    with user():
-        lm += f"""
-        Now carefully write the PDDL problem file for the corresponding domain file provided:
-        {lm["domain"]}.
-        First repeat the types, states (predicates) and actions in this file as a list in natural language. 
-        Then think step by step about a problem for this domain. Think about whether this problem does indeed have a solution plan.
-        Double check that everything is clear and it does in fact have a solution. Then write the PDDL problem file contents. I only want the problem file contents. 
-        Do not repeat names. Do not repeat names. Only the problem file contents nothing more. Only the problem file contents nothing more. I'm pasting this in a pddl problem file just letting you know. 
-        Do not write anything else other than what is asked. Only Only Only write what has been asked. Do not write any ``` statement as well. Only write what has been asked. Only write what has been asked. Only write what has been asked.
-        Do not write any html in the output.
-        """
-    with assistant():
-        problem_gen_status=True
-        while(problem_gen_status):
-            try: 
-                lm += gen("problem", temperature=0.5)
-                break
-            except:
-                continue
-        print("Problem draft has been generated!")
-
-    with open("problem0.pddl", "w", encoding='utf-8') as file:
-        file.write(lm["problem"]) # We want to read the article as a single string, so that we can feed it to gpt.
-        file.close()
+    scenario_domain_problem_data = retrieve_womdr_domain_problem_data()
     
-    with user():
-        lm += """
-        Consider the PDDL domain generated above, think step by step and 
-        carefully write some constructive, insightful analysis as a list that for each of the domain and problem files. 
-        Is the domain have a good state space and action space for the given scenario? Is the syntax consistent between the domain and the problem files?
-        What needs to be fixed? Do you believe that the domain and problem have a good solution?
-        What should be addressed for a solvable domain and problem? Give clear advice and instructions on fixing these issues. Point to the respective parts of the domain and problem files while giving advice.
-        """
+    # Concepts are given directly to generate pddl actions in json.
+    # scenario = basic_scenario_gpt.generate_scenario_actions(concepts=basic_scenario_gpt.generate_scenario_concepts(granularity=2, scenario_data=scenario_domain_data), granularity=2)
+    
+    for id in scenario_domain_problem_data.keys():
+        print(scenario_domain_problem_data[id]["Context"])
+        response_action_json = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "user", "content": f"""
+            
+            Based on the information detailed in {scenario_domain_problem_data[id]["Context"]}, 
+            * Write down a list of actions that map between states in natural language. 
+            * Each action has some causal states (predicates) and some effect states that will be true or false.
+            * Each action is a cause and effect mapping between any number of causal states and any number of effect states.
+            * Actions and states must not contradict each other.
+            * Action names must be descriptive and the action can be understood just by looking at the name.
+            * The state names within each action are also descriptive. The cause and effect statements and the state names must have the same information.
+            * There must be separate states regarding the environment, ego and the respective surrounding agents.
+            * In each action and state, the ego agent or the surrounding agent must be identified as <EGO> or <SURROUNDING AGENT #0> or <SURROUNDING AGENT #1> as needed.
+            * For distances, positions and speeds do not use specific numbers but words instead such as front, left, right, near, far, fast, slow, medium (or combinations such as front-left and so on) or other similar descriptive words. 
+            * The action itself will only become true when the causal states and the effect states are in the specific states that this description details.
+            * Write them in the following format:  
+            <open curly bracket>
+                "<action name>": 
+                <open curly bracket> 
+                    "<state name>": <open curly bracket> 
+                        "statement": "<the assertion in natural language. Use the fewest words possible for maximum clarity>
+                        "value": <Whether this value is true for false>,
+                        "state_type": <whether this state is a cause or effect for the current action>
+                    <close curly bracket>, 
+                    "<state name>": <curly bracket> 
+                        "statement": "<the assertion in natural language. Use the fewest words possible for maximum clarity>
+                        "value": <Whether this value is true for false>,
+                        "state_type": <whether this state is a cause or effect for the current action>
+                    <close curly bracket>
+                <close curly bracket>, 
+                ... 
+            <close curly bracket>
 
-    with assistant():
-        lm+= gen("feedback_initial", temperature=0.5)
-    
-    print(lm["feedback_initial"])
-    
-    with user():
-        lm += """
-        Consider the PDDL domain above and the PDDL problem files generated above. 
-        Now based on your feedback and selected domain file, write down a more polished, high quality PDDL domain file. I only only want the PDDL domain file contents.
+            No json tags to be used. Just the dictionary in the output. Nothing else, nothing else, nothing else.   
+            """},
+            ],
+            stream=False
+        )
+
+
+        response_domain_initial = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "user", "content": f"""
+                We need you to write specific driving behaviors to accomplish certain goals. A behavior is defined as actions taken in response to certain conditions. Conditions are provided as an environment state. 
+                Think about some states by yourself that you believe is necessary. 
+                Vehicles navigate in the action space and the state space provided to them.
+
+                Now generate a PDDL domain file for the scenario: {response_action_json.choices[0].message.content}. Domain file only only only for now.
+
+                
+                Think about the STRIPS PDDL for different popular domains such as gripper and sokoban.
+                Verify whether it all the suggested states and actions makes sense and is correct.
+                Then, if it feels correct, write it down as a PDDL domain file. I only only want the PDDL domain file contents.
+                
+                Keep things simple and clear. Do not repeat names. Do not repeat names. Do not redefine anything. Ensure that everything is very very clear and correct. Check and double check correctness.
+                Do not write anything else other than what is asked. Only Only Only write what has been asked. No tags of any sort. Only pure PDDL. Only write what has been asked. Only write what has been asked.
+                Nothing other than pure PDDL as asked. Nothing other than pure PDDL as asked. Please make sure it is correct.
+                Do not write ```pddl or ``` or the corresponding closing tags since I'm going to parse these outputs. 
+                
+                I repeat, do not write ```pddl or ``` or ```lisp or the corresponding closing tags since I'm going to parse these outputs. 
+                I repeat again, do not write ```pddl or ``` or ```lisp or the corresponding closing tags since I'm going to parse these outputs. 
+                """},
+            ],
+            stream=False
+        )
+
+        dir_path_text = "apla-planner/generated_pddls_deepseek/dataset/domains/"+id
+        try: 
+            dir_path = Path(dir_path_text)
+            dir_path.mkdir()
+            with open(dir_path_text+"/domain_deepseek_chat_"+id+".pddl", "w", encoding='utf-8') as file:
+                file.write(response_domain_initial.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                file.close()
+        except FileExistsError:
+            with open(dir_path_text+"/domain_deepseek_chat_"+id+".pddl", "w", encoding='utf-8') as file:
+                file.write(response_domain_initial.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                file.close()
+
         
-        Keep things very very simple and very very clear. Do not repeat names. Do not repeat names. Do not redefine anything. Ensure that everything is very very clear and correct. Check and double check correctness.
-        Do not write anything else other than what is asked. Only Only Only write what has been asked. Do not write any ``` statement as well. Only write what has been asked. Only write what has been asked.
-        """
+        PDDL_LLM_as_a_Judge_scores = {}
+        # Given one domain file based on a context, generate multiple problem files.
+        for interaction_id in scenario_domain_problem_data[id]["Interactions"].keys():    
+            response_problem_initial = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "user", "content": f"""
+                    Now carefully write the PDDL problem file for the corresponding domain file provided:
+                    {response_domain_initial.choices[0].message.content}.
 
-    with assistant():
-        domain_gen_status=True
-        while(domain_gen_status):
+                    Consider in addition some problem specific data: {scenario_domain_problem_data[id]["Interactions"][interaction_id]["problem_data"]}
+                    First repeat the types, states (predicates) and actions in this file as a list in natural language. 
+                    Then think step by step about a problem for this domain. Think about whether this problem does indeed have a solution plan.
+                    Double check that everything is clear and it does in fact have a solution. Then write the PDDL problem file contents. I only want the problem file contents. 
+                    Do not repeat names. Do not repeat names. Only the problem file contents nothing more. Only the problem file contents nothing more. I'm pasting this in a pddl problem file just letting you know. 
+                    Do not write anything else other than what is asked. Only Only Only write what has been asked. Only write pure PDDL as asked. 
+                    Only write pure PDDL as asked. Only write pure PDDL as asked.
+
+                    Do not write ```pddl or ``` or ```lisp or the corresponding closing tags since I'm going to parse these outputs. 
+                    """},
+                ],
+                stream=False
+            )
+
+            response_problem_final = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "user", "content": f"""
+                    Carefully read this PDDL problem file:
+                    {response_problem_initial.choices[0].message.content}.
+
+                    It is really important that the ```pddl or ``` or ```lisp opening tags 
+                    or the corresponding closing tags do not exist. Do these tags exist in the given PDDL problem file?
+                    Do not write your answer in the output. But if the answer is yes, can you remove the lines with these tags 
+                    and rewrite the rest of the PDDL file exactly as it is? The lines with the tags should definitely not be there in the final output. 
+                    If the answer is no however, please rewrite the file exactly as it is. Thank you! 
+                    
+                    Again, remember that the final output should only have lines of PDDL as instructed above, nothing else, nothing else, nothing else.
+                    """},
+                ],
+                stream=False
+            )
+
+            dir_path_text_problem = "apla-planner/generated_pddls_deepseek/dataset/problems/"+id
             try: 
-                lm += gen("domain_final", temperature=0.1)
-                break
-            except:
-                continue    
-        print("Final Domain file has been generated!")
+                dir_path_problem = Path(dir_path_text_problem)
+                dir_path_problem.mkdir()
+                with open(dir_path_text_problem+"/problem_deepseek_chat_"+interaction_id+".pddl", "w", encoding='utf-8') as file:
+                        file.write(response_problem_final.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                        file.close()
+            except FileExistsError:
+                with open(dir_path_text_problem+"/problem_deepseek_chat_"+interaction_id+".pddl", "w", encoding='utf-8') as file:
+                        file.write(response_problem_final.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                        file.close()
 
-    with open("domain_final.pddl", "w", encoding='utf-8') as file:
-        file.write(lm["domain_final"]) # We want to read the article as a single string, so that we can feed it to gpt.
-        file.close()
+
+            # Take each domain and problem file pair and run val through it, write it to the corresponding text file.
+            output_val_deepseek_chat = subprocess.run(["Parser", "apla-planner/generated_pddls_deepseek/dataset/domains/"+id+"/domain_deepseek_chat_"+id+".pddl", "apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/problem_deepseek_chat_"+interaction_id+".pddl"], stdout=subprocess.PIPE).stdout
+            string_output_round2 = str(output_val_deepseek_chat, encoding='utf-8')
+            with open("apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/val_output_"+interaction_id+".txt", "w", encoding='utf-8') as file:
+                    file.write(string_output_round2) # We want to read the article as a single string, so that we can feed it to gpt.
+                    file.close()
+            
+            response_LLM_judgement = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "user", "content": f"""
+                    First, read the context information for the given scenario:
+                    {scenario_domain_problem_data[id]["Context"]}
+                    
+                    Now, carefully read the generated domain file:
+                    {response_domain_initial.choices[0].message.content}
+
+                    Now, carefully review the problem data in the scenario:
+                    {scenario_domain_problem_data[id]["Interactions"][interaction_id]["problem_data"]}
+                    
+                    Carefully read this PDDL problem file:
+                    {response_problem_final.choices[0].message.content}.
+
+                    Now score the generated domain and problem PDDL files according to the given rubric:
+
+                    1. Consistency: Are the facts in the context information above consistently and correctly presented in the domain and problem files? Rate this output on a scale of 1 to 10. Explain your rating. 
+                    2. Domain coverage: Does the generated domain PDDL domain file adequately cover the information in the context above? Rate this output on a scale of 1 to 10. Explain your rating.
+                    3. Problem coverage: Does the generated problem PDDL file adequately cover the given problem data as presented above? The problem data asks specific questions with respect to the context. 
+                    Therefore, you must rate the coverage with respect to this specific question only. Rate this output on a scale of 1 to 10. Explain your rating.
+
+                    Format your output exactly in the following manner:
+                    <open curly bracket>
+                    "Context": "<Initial contextual information of the scenario exactly as it is above.>",
+                    "Consistency":
+                        <open curly bracket>
+                        "Score explanation": "<Detailed explanation here.>", 
+                        "Grade": "<Only a score here between 1 and 10.>" 
+                        <close curly bracket>,
+                    "Domain coverage":
+                        <open curly bracket>
+                        "Score explanation": "<Detailed explanation here.>", 
+                        "Grade": "<Only a score here between 1 and 10.>" 
+                        <close curly bracket>,
+                    "Problem coverage":
+                        <open curly bracket>
+                        "Problem data provided": "<Problem data given exactly as it is above.>"
+                        "Score explanation": "<Detailed explanation here.>", 
+                        "Grade": "<Only a score here between 1 and 10.>" 
+                        <close curly bracket>
+                    <close curly bracket>
+
+                    No tags. Just the dictionary in the output. Nothing else, nothing else.
+                    """},
+                ],
+                stream=False
+            )
+
+            LLM_eval_dictionary = eval(response_LLM_judgement.choices[0].message.content)
+            LLM_eval_dictionary.setdefault("context_word_count", len(scenario_domain_problem_data[id]["Context"].split()))
+
+            domain_problem_files = pddlpy.DomainProblem("apla-planner/generated_pddls_deepseek/dataset/domains/"+id+"/domain_deepseek_chat_"+id+".pddl", 
+                                                        "apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/problem_deepseek_chat_"+interaction_id+".pddl")
+            LLM_eval_dictionary.setdefault("domain_action_count", len(list(domain_problem_files.operators()))) # List of actions written in the domain.
+            LLM_eval_dictionary.setdefault("initial_state_size", len(domain_problem_files.initialstate())) # Initial state in the problem file.    
+
+            with open(dir_path_text_problem+"/LLM_eval_"+interaction_id+".json", "w", encoding='utf-8') as file_eval:
+                        json.dump(LLM_eval_dictionary, file_eval, indent=4) # We want to read the article as a single string, so that we can feed it to gpt.
+                        file.close()
+
+generate_pddl_with_syntax_check_o1()
+
+def generate_pddl_with_syntax_check_deepseek():
+    client = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
+
+    scenario_domain_problem_data = retrieve_womdr_domain_problem_data()
     
-    with user():
-        lm += """
-        Consider the PDDL domains above and the PDDL problems generated above. Consider the feedback provided above as well. Consider the PDDL domain and problems that were selected. 
-        Now write the PDDL problem file contents. I only want the updated, polished problem file contents. 
-        Do not repeat names. Do not repeat names. Only the problem file contents nothing more. Only the problem file contents nothing more. I'm pasting this in a pddl problem file just letting you know. 
-        Do not write anything else other than what is asked. Only Only Only write what has been asked. Do not write any ``` statement as well. Only write what has been asked. Only write what has been asked. Only write what has been asked.
-        Do not write any html in the output.
-        """
-    with assistant():
-        problem_gen_status=True
-        while(problem_gen_status):
+    # Concepts are given directly to generate pddl actions in json.
+    # scenario = basic_scenario_gpt.generate_scenario_actions(concepts=basic_scenario_gpt.generate_scenario_concepts(granularity=2, scenario_data=scenario_domain_data), granularity=2)
+    
+    for id in scenario_domain_problem_data.keys():
+        print(scenario_domain_problem_data[id]["Context"])
+        response_action_json = client.chat.completions.create(
+            model="deepseek-ai/DeepSeek-V3",
+            messages=[
+                {"role": "user", "content": f"""
+            
+            Based on the information detailed in {scenario_domain_problem_data[id]["Context"]}, 
+            * Write down a list of actions that map between states in natural language. 
+            * Each action has some causal states (predicates) and some effect states that will be true or false.
+            * Each action is a cause and effect mapping between any number of causal states and any number of effect states.
+            * Actions and states must not contradict each other.
+            * Action names must be descriptive and the action can be understood just by looking at the name.
+            * The state names within each action are also descriptive. The cause and effect statements and the state names must have the same information.
+            * There must be separate states regarding the environment, ego and the respective surrounding agents.
+            * In each action and state, the ego agent or the surrounding agent must be identified as <EGO> or <SURROUNDING AGENT #0> or <SURROUNDING AGENT #1> as needed.
+            * For distances, positions and speeds do not use specific numbers but words instead such as front, left, right, near, far, fast, slow, medium (or combinations such as front-left and so on) or other similar descriptive words. 
+            * The action itself will only become true when the causal states and the effect states are in the specific states that this description details.
+            * Write them in the following format:  
+            <open curly bracket>
+                "<action name>": 
+                <open curly bracket> 
+                    "<state name>": <open curly bracket> 
+                        "statement": "<the assertion in natural language. Use the fewest words possible for maximum clarity>
+                        "value": <Whether this value is true for false>,
+                        "state_type": <whether this state is a cause or effect for the current action>
+                    <close curly bracket>, 
+                    "<state name>": <curly bracket> 
+                        "statement": "<the assertion in natural language. Use the fewest words possible for maximum clarity>
+                        "value": <Whether this value is true for false>,
+                        "state_type": <whether this state is a cause or effect for the current action>
+                    <close curly bracket>
+                <close curly bracket>, 
+                ... 
+            <close curly bracket>
+
+            No json tags to be used. Just the dictionary in the output. Nothing else, nothing else, nothing else.   
+            """},
+            ],
+            stream=False
+        )
+
+
+        response_domain_initial = client.chat.completions.create(
+            model="deepseek-ai/DeepSeek-V3",
+            messages=[
+                {"role": "user", "content": f"""
+                We need you to write specific driving behaviors to accomplish certain goals. A behavior is defined as actions taken in response to certain conditions. Conditions are provided as an environment state. 
+                Think about some states by yourself that you believe is necessary. 
+                Vehicles navigate in the action space and the state space provided to them.
+
+                Now generate a PDDL domain file for the scenario: {response_action_json.choices[0].message.content}. Domain file only only only for now.
+
+                
+                Think about the STRIPS PDDL for different popular domains such as gripper and sokoban.
+                Verify whether it all the suggested states and actions makes sense and is correct.
+                Then, if it feels correct, write it down as a PDDL domain file. I only only want the PDDL domain file contents.
+                
+                Keep things simple and clear. Do not repeat names. Do not repeat names. Do not redefine anything. Ensure that everything is very very clear and correct. Check and double check correctness.
+                Do not write anything else other than what is asked. Only Only Only write what has been asked. No tags of any sort. Only pure PDDL. Only write what has been asked. Only write what has been asked.
+                Nothing other than pure PDDL as asked. Nothing other than pure PDDL as asked. Please make sure it is correct.
+                Do not write ```pddl or ``` or the corresponding closing tags since I'm going to parse these outputs. 
+                
+                I repeat, do not write ```pddl or ``` or ```lisp or the corresponding closing tags since I'm going to parse these outputs. 
+                I repeat again, do not write ```pddl or ``` or ```lisp or the corresponding closing tags since I'm going to parse these outputs. 
+                """},
+            ],
+            stream=False
+        )
+
+        dir_path_text = "apla-planner/generated_pddls_deepseek/dataset/domains/"+id
+        try: 
+            dir_path = Path(dir_path_text)
+            dir_path.mkdir()
+            with open(dir_path_text+"/domain_deepseek_chat_"+id+".pddl", "w", encoding='utf-8') as file:
+                file.write(response_domain_initial.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                file.close()
+        except FileExistsError:
+            with open(dir_path_text+"/domain_deepseek_chat_"+id+".pddl", "w", encoding='utf-8') as file:
+                file.write(response_domain_initial.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                file.close()
+
+        
+        PDDL_LLM_as_a_Judge_scores = {}
+        # Given one domain file based on a context, generate multiple problem files.
+        for interaction_id in scenario_domain_problem_data[id]["Interactions"].keys():    
+            response_problem_initial = client.chat.completions.create(
+                model="deepseek-ai/DeepSeek-V3",
+                messages=[
+                    {"role": "user", "content": f"""
+                    Now carefully write the PDDL problem file for the corresponding domain file provided:
+                    {response_domain_initial.choices[0].message.content}.
+
+                    Consider in addition some problem specific data: {scenario_domain_problem_data[id]["Interactions"][interaction_id]["problem_data"]}
+                    First repeat the types, states (predicates) and actions in this file as a list in natural language. 
+                    Then think step by step about a problem for this domain. Think about whether this problem does indeed have a solution plan.
+                    Double check that everything is clear and it does in fact have a solution. Then write the PDDL problem file contents. I only want the problem file contents. 
+                    Do not repeat names. Do not repeat names. Only the problem file contents nothing more. Only the problem file contents nothing more. I'm pasting this in a pddl problem file just letting you know. 
+                    Do not write anything else other than what is asked. Only Only Only write what has been asked. Only write pure PDDL as asked. 
+                    Only write pure PDDL as asked. Only write pure PDDL as asked.
+
+                    Do not write ```pddl or ``` or ```lisp or the corresponding closing tags since I'm going to parse these outputs. 
+                    """},
+                ],
+                stream=False
+            )
+
+            response_problem_final = client.chat.completions.create(
+                model="deepseek-ai/DeepSeek-V3",
+                messages=[
+                    {"role": "user", "content": f"""
+                    Carefully read this PDDL problem file:
+                    {response_problem_initial.choices[0].message.content}.
+
+                    It is really important that the ```pddl or ``` or ```lisp opening tags 
+                    or the corresponding closing tags do not exist. Do these tags exist in the given PDDL problem file?
+                    Do not write your answer in the output. But if the answer is yes, can you remove the lines with these tags 
+                    and rewrite the rest of the PDDL file exactly as it is? The lines with the tags should definitely not be there in the final output. 
+                    If the answer is no however, please rewrite the file exactly as it is. Thank you! 
+                    
+                    Again, remember that the final output should only have lines of PDDL as instructed above, nothing else, nothing else, nothing else.
+                    """},
+                ],
+                stream=False
+            )
+
+            dir_path_text_problem = "apla-planner/generated_pddls_deepseek/dataset/problems/"+id
             try: 
-                lm += gen("problem_final", temperature=0.1)
-                break
-            except:
-                continue
-        print("Final problem file has been generated!")
-
-    with open("problem_final.pddl", "w", encoding='utf-8') as file:
-        file.write(lm["problem_final"]) # We want to read the article as a single string, so that we can feed it to gpt.
-        file.close()
-
-    #Remove credit streaming from the output
-    up.shortcuts.get_environment().credits_stream = None
-
-    try:
-        # Run the generated domain and problem files via the Parser application in VAL (BSD 3 License) - https://github.com/KCL-Planning/VAL/tree/master 
-        output = subprocess.run(["Parser", "domain_final.pddl", "problem_final.pddl"], stdout=subprocess.PIPE).stdout
-        string_output = str(output, encoding='utf-8')
-        print(string_output)
-        with user():
-            lm+=f"""
-            The PDDL domain files generated above were given to the popular planning validator VAL. Within this tool, I'm using the PlanRec tool which explains which action comes before or after which action.
-            This output is given in {string_output}. Based on this output, can you explain what the output means. Please explain clearly so that I can understand.  
-            """
-        with assistant():
-            lm+=gen("validity_final", temperature=0.2)
-        
-        # with user():
-        #     lm+="""
-        #     Now write the updated PDDL domain file contents. I only want the domain file contents. 
-        #     Do not repeat names. Do not repeat names. DO NOT write feedback here, write the actual PDDL domain file contents. 
-        #     Only the domain file contents nothing more. Only the domain file contents nothing more.
-        #     Only Only Only the new updated domain file contents.
-        #     Do not write anything else other than what is asked. Only Only Only write what has been asked. Do not write any ``` statement as well. Only write what has been asked. Only write what has been asked. Only write what has been asked.
-        #     Do not write any html in the output. 
-        #     """
-        
-        # with assistant():
-        #     domain_gen_status=True
-        #     while(domain_gen_status):
-        #         try: 
-        #             lm += gen("updated_domain", temperature=0.05)
-        #             break
-        #         except:
-        #             continue    
-        #     print("Planner feedback has been considered and the new domain file has been generated!")
-
-        # with open("updated_domain.pddl", "w", encoding='utf-8') as file:
-        #     file.write(lm["updated_domain"]) # We want to read the article as a single string, so that we can feed it to gpt.
-        #     file.close()
-        
-        # with user():
-        #     lm += """
-        #     Consider the PDDL domains, the PDDL problems and the planner feedback generated above. Now carefully write the PDDL problem file for the corresponding domain file provided by you above.
-        #     Write some constructive, insightful feedback that would improve the problem file, with close attention on the planner results. 
-        #     Is the problem looking for some important planning skills? What should be addressed in the problem files? Be specific, and focus on the 
-        #     problem file contents.
-        #     """
-
-        # with assistant():
-        #     lm+= gen("problem_critique", temperature=0.2)
-        
-        # print(lm["problem_critique"])
-
-        # with user():
-        #     lm+="""
-        #     Now write the PDDL problem file contents. I only want the problem file contents. 
-        #     Do not repeat names. Do not repeat names. Only the problem file contents nothing more. Only the problem file contents nothing more. 
-        #     Do not write anything else other than what is asked. Only Only Only write what has been asked. Do not write any ``` statement as well. Only write what has been asked. Only write what has been asked. Only write what has been asked.
-        #     Do not write any html in the output.
-        #     """
-        # with assistant():
-        #     problem_gen_status=True
-        #     while(problem_gen_status):
-        #         try: 
-        #             lm += gen("problem_after_planner_feedback", temperature=0.05)
-        #             break
-        #         except:
-        #             continue
-        #     print("Problem after planner feedback has been generated!")
-
-        # with open("problem_after_planner_feedback.pddl", "w", encoding='utf-8') as file:
-        #     file.write(lm["problem_after_planner_feedback"]) # We want to read the article as a single string, so that we can feed it to gpt.
-        #     file.close()
-        
-        # problem=reader.parse_problem("updated_domain.pddl", "problem_after_planner_feedback.pddl")
-        # result = planner.solve(problem)
-        # print("The round 2 results for the planner are...")
-        # print(result)
-        
-
-    except:
-        print("Exception! Trying again...")
-        continue # Try again
-
-    # Solution found, break the loop
-    break
+                dir_path_problem = Path(dir_path_text_problem)
+                dir_path_problem.mkdir()
+                with open(dir_path_text_problem+"/problem_deepseek_chat_"+interaction_id+".pddl", "w", encoding='utf-8') as file:
+                        file.write(response_problem_final.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                        file.close()
+            except FileExistsError:
+                with open(dir_path_text_problem+"/problem_deepseek_chat_"+interaction_id+".pddl", "w", encoding='utf-8') as file:
+                        file.write(response_problem_final.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
+                        file.close()
 
 
+            # Take each domain and problem file pair and run val through it, write it to the corresponding text file.
+            output_val_deepseek_chat = subprocess.run(["Parser", "apla-planner/generated_pddls_deepseek/dataset/domains/"+id+"/domain_deepseek_chat_"+id+".pddl", "apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/problem_deepseek_chat_"+interaction_id+".pddl"], stdout=subprocess.PIPE).stdout
+            string_output_round2 = str(output_val_deepseek_chat, encoding='utf-8')
+            with open("apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/val_output_"+interaction_id+".txt", "w", encoding='utf-8') as file:
+                    file.write(string_output_round2) # We want to read the article as a single string, so that we can feed it to gpt.
+                    file.close()
+            
+            response_LLM_judgement = client.chat.completions.create(
+                model="deepseek-ai/DeepSeek-V3",
+                messages=[
+                    {"role": "user", "content": f"""
+                    First, read the context information for the given scenario:
+                    {scenario_domain_problem_data[id]["Context"]}
+                    
+                    Now, carefully read the generated domain file:
+                    {response_domain_initial.choices[0].message.content}
+
+                    Now, carefully review the problem data in the scenario:
+                    {scenario_domain_problem_data[id]["Interactions"][interaction_id]["problem_data"]}
+                    
+                    Carefully read this PDDL problem file:
+                    {response_problem_final.choices[0].message.content}.
+
+                    Now score the generated domain and problem PDDL files according to the given rubric:
+
+                    1. Consistency: Are the facts in the context information above consistently and correctly presented in the domain and problem files? Rate this output on a scale of 1 to 10. Explain your rating. 
+                    2. Domain coverage: Does the generated domain PDDL domain file adequately cover the information in the context above? Rate this output on a scale of 1 to 10. Explain your rating.
+                    3. Problem coverage: Does the generated problem PDDL file adequately cover the given problem data as presented above? The problem data asks specific questions with respect to the context. 
+                    Therefore, you must rate the coverage with respect to this specific question only. Rate this output on a scale of 1 to 10. Explain your rating.
+
+                    Format your output exactly in the following manner:
+                    <open curly bracket>
+                    "Context": "<Initial contextual information of the scenario exactly as it is above.>",
+                    "Consistency":
+                        <open curly bracket>
+                        "Score explanation": "<Detailed explanation here.>", 
+                        "Grade": "<Only a score here between 1 and 10.>" 
+                        <close curly bracket>,
+                    "Domain coverage":
+                        <open curly bracket>
+                        "Score explanation": "<Detailed explanation here.>", 
+                        "Grade": "<Only a score here between 1 and 10.>" 
+                        <close curly bracket>,
+                    "Problem coverage":
+                        <open curly bracket>
+                        "Problem data provided": "<Problem data given exactly as it is above.>"
+                        "Score explanation": "<Detailed explanation here.>", 
+                        "Grade": "<Only a score here between 1 and 10.>" 
+                        <close curly bracket>
+                    <close curly bracket>
+
+                    No tags. Just the dictionary in the output. Nothing else, nothing else.
+                    """},
+                ],
+                stream=False
+            )
+
+            LLM_eval_dictionary = eval(response_LLM_judgement.choices[0].message.content)
+            LLM_eval_dictionary.setdefault("context_word_count", len(scenario_domain_problem_data[id]["Context"].split()))
+
+            domain_problem_files = pddlpy.DomainProblem("apla-planner/generated_pddls_deepseek/dataset/domains/"+id+"/domain_deepseek_chat_"+id+".pddl", 
+                                                        "apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/problem_deepseek_chat_"+interaction_id+".pddl")
+            LLM_eval_dictionary.setdefault("domain_action_count", len(list(domain_problem_files.operators()))) # List of actions written in the domain.
+            LLM_eval_dictionary.setdefault("initial_state_size", len(domain_problem_files.initialstate())) # Initial state in the problem file.    
+
+            with open(dir_path_text_problem+"/LLM_eval_"+interaction_id+".json", "w", encoding='utf-8') as file_eval:
+                        json.dump(LLM_eval_dictionary, file_eval, indent=4) # We want to read the article as a single string, so that we can feed it to gpt.
+                        file.close()
+    
+
+#generate_pddl_with_syntax_check_deepseek()
+
+def pddl_response_and_answer_questions():
+    client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    client_deepseek = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
 
 
+    scenario_domain_and_problem_data = retrieve_womdr_domain_problem_data()
 
+    # Concepts are given directly to generate pddl actions in json.
+    # scenario = basic_scenario_gpt.generate_scenario_actions(concepts=basic_scenario_gpt.generate_scenario_concepts(granularity=2, scenario_data=scenario_domain_data), granularity=2)
+    for scenario_id in scenario_domain_and_problem_data.keys():
+        for interaction_id in scenario_domain_and_problem_data[scenario_id]["Interactions"].keys():
+            context = scenario_domain_and_problem_data[scenario_id]["Context"]
+            question = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["problem_data"]
+            answer = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["answer_data"]
+            response_direct = client_oai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": f"""
+                Here is some information about an autonomous vehicle scenario:
+                {scenario_domain_and_problem_data[scenario_id]["Context"]}
 
+                Answer the following question:
+                {question}
+
+                Think step by step. Write a short 2 sentence answer only. Show your reasoning. 
+                
+                """},
+                ],
+                stream=False
+            )
+
+            domain_path = "generated_pddls/domain_deepseek_chat_"+scenario_id+".pddl"
+            problem_file_path = "problem_deepseek_chat_"+scenario_id+"_"+interaction_id+".pddl"
+            problem_path = "generated_pddls/"+problem_file_path
+
+            with open(domain_path, 'r') as file_domain:
+                pddl_domain = file_domain.readlines()
+            
+            with open(problem_path, 'r') as file_problem:
+                pddl_problem = file_problem.readlines()
+
+            with open("generated_pddls/plan_set.json", 'r') as plan_file:
+                plan_dictionary = json.load(plan_file)
+
+            response_gpt_4o_mini = client_oai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "user", "content": f"""
+                Here is some context about the test scenario:
+                {context}
+                
+                Here is some PDDL domain data:
+                {pddl_domain}
+
+                Here is the PDDL problem statement:
+                {pddl_problem}
+
+                I ran this through a planner and got the following result:
+                {plan_dictionary[problem_file_path]}
+
+                Think step by step and answer the following question:
+                {question}
+
+                Write a short 2 sentence answer only. Show your reasoning.
+                
+                """},
+                ],
+                stream=False
+            )
+
+            response_deepseek_score = client_deepseek.chat.completions.create(
+                model="deepseek-ai/DeepSeek-V3",
+                messages=[
+                    {"role": "user", "content": f"""
+                Here is some context about the test scenario:
+                {context}
+
+                This question was asked with regards to this context:
+                {question}
+
+                This is the ground truth answer:
+                {answer}
+
+                This was the attempt by an AI for this question
+                {response_gpt_4o_mini.choices[0].message.content}
+
+                Grade this answer on the following aspects:
+                1. The correctness of the AI answer with respect to the ground truth answer. Give it a score between 1 to 10.
+                Explain why this score was given by you in detail.
+                2. The faithfulness of the reasoning. Are the conclusions drawn in the answer given by the AI consistent with its reasoning? Here, give it a score between 1 to 10.
+                Explain why this score was given by you in detail.
+                
+                """},
+                ],
+                stream=False
+            )
+
+            print(response_direct.choices[0].message.content)
+            print("\n")
+
+            print("GPT 4o mini answer after reading the PDDL is:\n")
+            print(response_gpt_4o_mini.choices[0].message.content)
+            print("\n")
+            print("Ground truth answer is:\n")
+            print(answer)
+            print("\n")
+            with open("generated_pddls/deepseek_grades.txt", 'w') as grade_file:
+                grade_file.writelines(response_deepseek_score.choices[0].message.content)
+            print("Deepseek score grading response\n")
+            print(response_deepseek_score.choices[0].message.content)
+
+#pddl_response_and_answer_questions()

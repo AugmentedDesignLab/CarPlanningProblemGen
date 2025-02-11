@@ -1,49 +1,55 @@
+(define (domain driving_behavior)
 
-```lisp
-(define (domain driving-behaviors)
   (:requirements :strips :typing)
-  (:types vehicle traffic-light pedestrian road-condition visibility-condition)
-  
+
+  (:types vehicle environment)
+
   (:predicates
-    (red-light-ahead ?v - vehicle ?t - traffic-light)
-    (within-distance ?v - vehicle ?d - distance)
-    (pedestrian-crossing ?v - vehicle ?p - pedestrian)
-    (wet-road ?r - road-condition)
-    (foggy-visibility ?vc - visibility-condition)
-    (velocity-zero ?v - vehicle)
-    (negative-acceleration ?v - vehicle)
-    (speed-reduced ?v - vehicle ?percent - number)
-    (maintain-following-distance ?v - vehicle ?time - number)
+    (lane_position_maintained ?v - vehicle)
+    (intersection_ahead ?v - vehicle)
+    (traffic_light_green ?v - vehicle)
+    (constant_speed ?v - vehicle)
+    (velocity_maintained ?v - vehicle)
+    (safe_environment ?v - vehicle)
+    (no_pedestrians ?v - vehicle)
+    (dry_surface ?e - environment)
+    (driver_not_distracted ?v - vehicle)
+    (surrounding_vehicle_detected ?v - vehicle)
+    (relative_position_safe ?v - vehicle)
+    (confidence_in_navigation ?v - vehicle)
+    (green_light_stable ?v - vehicle)
   )
-  
-  (:action stop-at-red-light
-    :parameters (?v - vehicle ?t - traffic-light)
-    :precondition (and (red-light-ahead ?v ?t) (within-distance ?v 5))
-    :effect (velocity-zero ?v)
+
+  (:action maintain_lane_position
+    :parameters (?v - vehicle)
+    :precondition (and (lane_position_maintained ?v)
+                       (constant_speed ?v))
+    :effect (lane_position_maintained ?v)
   )
-  
-  (:action slow-down-for-pedestrian
-    :parameters (?v - vehicle ?p - pedestrian)
-    :precondition (and (pedestrian-crossing ?v ?p) (within-distance ?v 10))
-    :effect (negative-acceleration ?v)
+
+  (:action approach_intersection
+    :parameters (?v - vehicle)
+    :precondition (and (intersection_ahead ?v)
+                       (traffic_light_green ?v))
+    :effect (velocity_maintained ?v)
   )
-  
-  (:action adjust-speed-for-wet-road
-    :parameters (?v - vehicle ?r - road-condition)
-    :precondition (wet-road ?r)
-    :effect (speed-reduced ?v 20)
+
+  (:action ensure_safe_environment
+    :parameters (?v - vehicle ?e - environment)
+    :precondition (and (no_pedestrians ?v)
+                       (dry_surface ?e))
+    :effect (driver_not_distracted ?v)
   )
-  
-  (:action maintain-safe-distance
-    :parameters (?v - vehicle ?d - distance ?time - number)
-    :precondition (within-distance ?v ?d)
-    :effect (maintain-following-distance ?v ?time)
+
+  (:action monitor_surrounding_vehicles
+    :parameters (?v - vehicle)
+    :precondition (surrounding_vehicle_detected ?v)
+    :effect (relative_position_safe ?v)
   )
-  
-  (:action proceed-with-caution
-    :parameters (?v - vehicle ?vc - visibility-condition)
-    :precondition (foggy-visibility ?vc)
-    :effect (speed-reduced ?v 30)
+
+  (:action navigate_intersection_safely
+    :parameters (?v - vehicle)
+    :precondition (green_light_stable ?v)
+    :effect (confidence_in_navigation ?v)
   )
 )
-```
