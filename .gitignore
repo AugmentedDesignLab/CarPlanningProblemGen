@@ -4,3 +4,6 @@ generated_pddls/*
 parsed_womdr_data/*
 pddl-examples/*
 *.pddl
+__pycache__/*
+apla-planner/generated_pddls_deepseek/.DS_Store
+grades/*
