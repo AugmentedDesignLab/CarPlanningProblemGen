@@ -18,6 +18,7 @@ def retrieve_womdr_domain_problem_data():
         with open("parsed_womdr_data/"+i, 'r') as scenario_file:
             scenario_data = json.load(scenario_file) 
             for key in scenario_data.keys():
+                # Indices here have been planned based on the Waymo Reasoning dataset files
                 scenario_domain_problem_data.setdefault(i[:-5], {
                     "Context": ""
                 })
@@ -30,17 +31,13 @@ def retrieve_womdr_domain_problem_data():
                     }) 
                     scenario_domain_problem_data[i[:-5]]["Interactions"][interaction_key]["problem_data"] = scenario_data[key]["Interactions"][interaction_key]["reference_question"]
                     scenario_domain_problem_data[i[:-5]]["Interactions"][interaction_key]["answer_data"] = scenario_data[key]["Interactions"][interaction_key]["reference_answer"]
-    #print(scenario_domain_problem_data)        
+       
     return scenario_domain_problem_data
 
 def generate_pddl_with_syntax_check_o1():
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-
     scenario_domain_problem_data = retrieve_womdr_domain_problem_data()
-    
-    # Concepts are given directly to generate pddl actions in json.
-    # scenario = basic_scenario_gpt.generate_scenario_actions(concepts=basic_scenario_gpt.generate_scenario_concepts(granularity=2, scenario_data=scenario_domain_data), granularity=2)
-    
+  
     for id in scenario_domain_problem_data.keys():
         print(scenario_domain_problem_data[id]["Context"])
         response_action_json = client.chat.completions.create(
@@ -249,10 +246,10 @@ def generate_pddl_with_syntax_check_o1():
                         json.dump(LLM_eval_dictionary, file_eval, indent=4) # We want to read the article as a single string, so that we can feed it to gpt.
                         file.close()
 
-generate_pddl_with_syntax_check_o1()
+#generate_pddl_with_syntax_check_o1()
 
 def generate_pddl_with_syntax_check_deepseek():
-    client = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
+    client = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 
     scenario_domain_problem_data = retrieve_womdr_domain_problem_data()
     
@@ -262,7 +259,7 @@ def generate_pddl_with_syntax_check_deepseek():
     for id in scenario_domain_problem_data.keys():
         print(scenario_domain_problem_data[id]["Context"])
         response_action_json = client.chat.completions.create(
-            model="deepseek-ai/DeepSeek-V3",
+            model="deepseek-chat",
             messages=[
                 {"role": "user", "content": f"""
             
@@ -303,7 +300,7 @@ def generate_pddl_with_syntax_check_deepseek():
 
 
         response_domain_initial = client.chat.completions.create(
-            model="deepseek-ai/DeepSeek-V3",
+            model="deepseek-chat",
             messages=[
                 {"role": "user", "content": f"""
                 We need you to write specific driving behaviors to accomplish certain goals. A behavior is defined as actions taken in response to certain conditions. Conditions are provided as an environment state. 
@@ -346,7 +343,7 @@ def generate_pddl_with_syntax_check_deepseek():
         # Given one domain file based on a context, generate multiple problem files.
         for interaction_id in scenario_domain_problem_data[id]["Interactions"].keys():    
             response_problem_initial = client.chat.completions.create(
-                model="deepseek-ai/DeepSeek-V3",
+                model="deepseek-chat",
                 messages=[
                     {"role": "user", "content": f"""
                     Now carefully write the PDDL problem file for the corresponding domain file provided:
@@ -367,7 +364,7 @@ def generate_pddl_with_syntax_check_deepseek():
             )
 
             response_problem_final = client.chat.completions.create(
-                model="deepseek-ai/DeepSeek-V3",
+                model="deepseek-chat",
                 messages=[
                     {"role": "user", "content": f"""
                     Carefully read this PDDL problem file:
@@ -406,7 +403,7 @@ def generate_pddl_with_syntax_check_deepseek():
                     file.close()
             
             response_LLM_judgement = client.chat.completions.create(
-                model="deepseek-ai/DeepSeek-V3",
+                model="deepseek-chat",
                 messages=[
                     {"role": "user", "content": f"""
                     First, read the context information for the given scenario:
@@ -472,13 +469,9 @@ def generate_pddl_with_syntax_check_deepseek():
 
 def pddl_response_and_answer_questions():
     client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    client_deepseek = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
-
+    client_deepseek = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 
     scenario_domain_and_problem_data = retrieve_womdr_domain_problem_data()
-
-    # Concepts are given directly to generate pddl actions in json.
-    # scenario = basic_scenario_gpt.generate_scenario_actions(concepts=basic_scenario_gpt.generate_scenario_concepts(granularity=2, scenario_data=scenario_domain_data), granularity=2)
     for scenario_id in scenario_domain_and_problem_data.keys():
         for interaction_id in scenario_domain_and_problem_data[scenario_id]["Interactions"].keys():
             context = scenario_domain_and_problem_data[scenario_id]["Context"]
@@ -541,7 +534,7 @@ def pddl_response_and_answer_questions():
             )
 
             response_deepseek_score = client_deepseek.chat.completions.create(
-                model="deepseek-ai/DeepSeek-V3",
+                model="deepseek-chat",
                 messages=[
                     {"role": "user", "content": f"""
                 Here is some context about the test scenario:

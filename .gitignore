@@ -1,4 +1,5 @@
-apla-planner/*
+apla-planner/generated_pddls_deepseek/dataset/*
+apla-planner/generated_pddls_deepseek/logs/*
 generated_pddls/*
 parsed_womdr_data/*
 pddl-examples/*

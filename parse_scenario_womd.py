@@ -85,10 +85,10 @@ def transform_to_mcq(facts, mcq_info):
 
 
 def transform_to_mcq_deepseek(facts, mcq_info):
-    client = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
+    client = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 
-    response_ds_r1 = client.chat.completions.create(
-        model="deepseek-ai/DeepSeek-R1",
+    response_ds_v3 = client.chat.completions.create(
+        model="deepseek-chat",
         messages=[
             {"role": "system", "content": "You are very intelligent (as usual, not surprising) and helpful."},
             {"role": "user", "content": f"""
@@ -124,7 +124,8 @@ def transform_to_mcq_deepseek(facts, mcq_info):
 
             Generate the multiple choice questions exactly in the format shown in these examples.
             <open curly bracket. This will be the start of the questions regarding a single scenario>
-            "context": <An exact copy of the scenario facts mentioned initially>,
+            "context": <Rewrite scenario facts mentioned above as a single paragraph.
+            It must not be in the question and answer format, but should be >,
             "q_1": <open curly bracket>               
             "difficulty": 9,
             "question": <An exact copy of the question given initially>,
@@ -142,33 +143,33 @@ def transform_to_mcq_deepseek(facts, mcq_info):
         stream=False
     )
 
-    response_ds_v3 = client.chat.completions.create(
-        model="deepseek-ai/DeepSeek-V3",
-        messages=[
-            {"role": "system", "content": "You are very intelligent (as usual, not surprising) and helpful."},
-            {"role": "user", "content": f"""
-            Now consider the output presented here: {response_ds_r1.choices[0].message.content} 
-            Format and generate the outputs above exactly in the format shown below.
-            <open curly bracket. This will be the start of the questions regarding a single scenario>
-            "context": <An exact copy of the scenario facts mentioned initially>,
-            "q_1": <open curly bracket>               
-            "difficulty": 9,
-            "question": <An exact copy of the question given initially>,
-            "a": "...",
-            "b": "...",
-            "c": "...",
-            "correct_answer": <just the option label>
-            <close curly bracket>
-            <close curly bracket. This reflects the end of the questions regarding a single scenario.>
+    # response_ds_v3 = client.chat.completions.create(
+    #     model="deepseek-chat",
+    #     messages=[
+    #         {"role": "system", "content": "You are very intelligent (as usual, not surprising) and helpful."},
+    #         {"role": "user", "content": f"""
+    #         Now consider the output presented here: {response_ds_r1.choices[0].message.content} 
+    #         Format and generate the outputs above exactly in the format shown below.
+    #         <open curly bracket. This will be the start of the questions regarding a single scenario>
+    #         "context": <An exact copy of the scenario facts mentioned initially>,
+    #         "q_1": <open curly bracket>               
+    #         "difficulty": 9,
+    #         "question": <An exact copy of the question given initially>,
+    #         "a": "...",
+    #         "b": "...",
+    #         "c": "...",
+    #         "correct_answer": <just the option label>
+    #         <close curly bracket>
+    #         <close curly bracket. This reflects the end of the questions regarding a single scenario.>
 
-            Keep in mind that the multiple choice questions must be consistent with the questions provided initially. Nothing else. No tags. No carriage returns. Just the dictionary starting from the curly bracket and ending in the curly bracket.
-            I need it to be exactly in that form. No json tags in your output. No json tags in your output. I'm grateful, thank you!
+    #         Keep in mind that the multiple choice questions must be consistent with the questions provided initially. Nothing else. No tags. No carriage returns. Just the dictionary starting from the curly bracket and ending in the curly bracket.
+    #         I need it to be exactly in that form. No json tags in your output. No json tags in your output. I'm grateful, thank you!
 
-            The output needs to be exactly in the format shown above.
-            """},
-        ],
-        stream=False
-    )
+    #         The output needs to be exactly in the format shown above.
+    #         """},
+    #     ],
+    #     stream=False
+    # )
 
     return response_ds_v3.choices[0].message.content
 
@@ -259,8 +260,9 @@ def eval_llm():
     print("Final accuracy percentage is {}".format((correct_answer_counter/question_counter)*100))
 
 def obtain_and_write_mcq_data(start, end):
-    mcq_data = {}
+    
     for filename in scenario_files[start:end]:
+        mcq_data = {}
         womd_datapoint = generate_womd_reasoning_datapoint(filename=filename)
         id = womd_datapoint['sid']
         facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
@@ -298,5 +300,5 @@ def obtain_and_write_mcq_data(start, end):
             json.dump(mcq_data, file, indent=4)
     
 
-obtain_and_write_mcq_data(0, 2)
+obtain_and_write_mcq_data(0, 1)
 
