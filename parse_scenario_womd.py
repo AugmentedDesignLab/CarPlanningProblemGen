@@ -300,5 +300,5 @@ def obtain_and_write_mcq_data(start, end):
             json.dump(mcq_data, file, indent=4)
     
 
-obtain_and_write_mcq_data(0, 1)
+#obtain_and_write_mcq_data(0, 1)
 

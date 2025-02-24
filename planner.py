@@ -453,7 +453,17 @@ def generate_pddl_with_syntax_check_deepseek():
             )
 
             LLM_eval_dictionary = eval(response_LLM_judgement.choices[0].message.content)
-            LLM_eval_dictionary.setdefault("context_word_count", len(scenario_domain_problem_data[id]["Context"].split()))
+            # Each sentence in the scenario context pertains to a fact.
+            # We can split the context by sentence and count the word count per sentence to get a sense of how difficult the facts are.
+            # Longer individual sentences would mean more complex facts.
+            context_sentence_list = scenario_domain_problem_data[id]["Context"].split(". ")
+            total_word_count_sentence = 0
+            for sentence_index in range(len(context_sentence_list)): 
+                 total_word_count_sentence += len(context_sentence_list[sentence_index].split())
+            
+            average_word_count_sentence = total_word_count_sentence / len(context_sentence_list)
+            
+            LLM_eval_dictionary.setdefault("average_context_sentence_word_count", average_word_count_sentence)
 
             domain_problem_files = pddlpy.DomainProblem("apla-planner/generated_pddls_deepseek/dataset/domains/"+id+"/domain_deepseek_chat_"+id+".pddl", 
                                                         "apla-planner/generated_pddls_deepseek/dataset/problems/"+id+"/problem_deepseek_chat_"+interaction_id+".pddl")
