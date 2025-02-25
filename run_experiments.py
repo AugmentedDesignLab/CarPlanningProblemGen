@@ -8,12 +8,11 @@ import planner
 import llm_qa
 
 print("Running the data preprocessing .... \nThe data will be in the parsed_womdr_data dictionary.")
-parse_scenario_womd.obtain_and_write_mcq_data(3, 4)
+parse_scenario_womd.obtain_and_write_mcq_data(25, 26)
 print("Completed data preprocessing!\n")
 
-print("""Running the PDDL file generation.\nThe domains and problem files will get saved in the apla-planner/generated_pddls_deepseek/ path
-      within the domains and problems folder.""")
-planner.generate_pddl_with_syntax_check_deepseek()
+print("Running the PDDL file generation...\nThe domains and problem files will get saved in the apla-planner/generated_pddls_deepseek path within the domains and problems folder.......")
+planner.generate_pddl_with_syntax_check()
 print("PDDL problem generation has been completed!\n")
 
 print("Running the planner within WSL... \n")

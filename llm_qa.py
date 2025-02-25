@@ -28,6 +28,7 @@ model_dictionary = {
 
 model_outputs = {}
 existing_grades = {}
+exp_run_qa_scores = []
 
 ######## =================  LLM API calls ====================== ###########
 def openai_call(model_name, prompt):
@@ -145,18 +146,20 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
             for model_name in model_dictionary[model_family]:
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
                                        answer=answer, model_output=openai_call(model_name=model_name, prompt=pddl_prompt))
-                grading_output = eval(deepseek_call(model_name="deepseek-chat", prompt=grading_prompt))
+                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_with_plan", grading_output
                     )
+                existing_grades[scenario_id][interaction_id].setdefault("problem_score_avg", ((grading_output["Correctness score"] + grading_output["Faithfulness score"])/2))
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
                                        answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=pddl_prompt))
-                grading_output = eval(deepseek_call(model_name="deepseek-chat", prompt=grading_prompt))
+                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_with_plan", grading_output
                     )
+                existing_grades[scenario_id][interaction_id].setdefault("problem_score_avg", ((grading_output["Correctness score"] + grading_output["Faithfulness score"])/2))
     
 
 
@@ -187,6 +190,9 @@ def pddl_response_and_answer_questions(domain_path, problem_path, current_plan, 
                         data = json.load(eval_file)
                         existing_grades[scenario_id][interaction_id].setdefault("LLM_eval_problem_grade", data["Problem coverage"]["Grade"])
                         existing_grades[scenario_id][interaction_id].setdefault("LLM_eval_context_word_count", data["average_context_sentence_word_count"])
+                        qa_interaction_score = existing_grades[scenario_id][interaction_id]["problem_score_avg"]*existing_grades[scenario_id][interaction_id]["LLM_eval_problem_grade"]
+                        existing_grades[scenario_id][interaction_id].setdefault("qa_interaction_score", qa_interaction_score)
+                        exp_run_qa_scores.append(qa_interaction_score)  
                     print("Existing grades is given by {}".format(existing_grades))
                     json.dump(existing_grades, grade_file, indent=4)
                     grade_file.close()
@@ -238,3 +244,7 @@ def main():
                         continue
                 
             else: pddlproblem_file_name = ""
+    
+    print("For this exp run, the final qa scores are {}".format(exp_run_qa_scores))
+    plt.bar([i for i in range(len(exp_run_qa_scores))], exp_run_qa_scores)
+    plt.show()
