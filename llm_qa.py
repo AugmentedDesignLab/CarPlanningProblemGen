@@ -246,5 +246,6 @@ def main():
             else: pddlproblem_file_name = ""
     
     print("For this exp run, the final qa scores are {}".format(exp_run_qa_scores))
+    
     plt.bar([i for i in range(len(exp_run_qa_scores))], exp_run_qa_scores)
     plt.show()

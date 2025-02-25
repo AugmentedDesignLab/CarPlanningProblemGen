@@ -5,6 +5,7 @@ import os
 from rouge import Rouge
 
 scenario_files = os.listdir("../car_beh_gen/datasets/training.tar/training/training/")
+scenario_blocklist = ['3e9622a454291617']
 
 def generate_womd_reasoning_datapoint(filename):
     with open('../car_beh_gen/datasets/training.tar/training/training/'+filename, 'r') as file:
@@ -62,9 +63,18 @@ def process_womd_datapoint_for_mcq_gen(womd_datapoint):
 
 def obtain_and_write_mcq_data(start, end):
     for filename in scenario_files[start:end]:
+        blocklist_match = False
         final_preprocessed_data = {}
         womd_datapoint = generate_womd_reasoning_datapoint(filename=filename)
         id = womd_datapoint['sid']
+
+        # Add bad scenarios to the blocklist
+        for blocklist_id in scenario_blocklist:
+            if blocklist_id==id: 
+                blocklist_match = True
+        if blocklist_match==True:
+            continue #skip this iteration
+        
         facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
         reference_context = facts["Facts about the static environment"]+facts["Facts about the ego vehicle in this environment"]+facts["Facts about the agents surrounding the ego vehicle in this environment"]
         preprocessed_data = {}

@@ -6,6 +6,10 @@ import json
 from pathlib import Path
 import pddlpy
 from openai import OpenAI
+from client_model_setup import ProvidedLLM
+from tqdm import tqdm
+
+provided_llm = ProvidedLLM() #Object contains all the client setup and the model names for that client.
 
 def retrieve_womdr_domain_problem_data():
 
@@ -32,21 +36,64 @@ def retrieve_womdr_domain_problem_data():
        
     return scenario_domain_problem_data
 
-def generate_pddl_with_syntax_check():
-    client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-    client_deepinfra = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
-    client_dsapi = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
+def resolve_client_and_model(api_type, model_name):
+    # API_type parameter must be from the following names:
+    # 1. ds_api
+    # 2. deepinfra_api
+    # 3. oai_api
+    
+    # For ds models, model names should be from the following:
+    # 1. ds_v3_dsapi
+    # 2. ds_r1_dsapi
 
-    model_ds = "deepseek-ai/DeepSeek-V3"
-    model_ds_dsapi = "deepseek-chat"
-    model_llama_33 = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-    model_llama_31 = "meta-llama/Meta-Llama-3.1-405B-Instruct"
+    # For deepinfra models, model names should be from the following:
+    # 1. ds_v3,
+    # 2. llama_33_70b
+    # 3. llama_31_405b
+    # 4. qw_25_72b
+    # 5. ds_distil_llama_70b
+    # 6. gemma_2
+    # 7. llama_31_8b
+    # 8. qw_25_7b
+    # 9. phi_4
+    
+    # For OpenAI models, model names should be from the following:
+    # 1. gpt_4o_mini
+    # 2. o3_mini
+    
+    if api_type=="ds_api":
+        client = provided_llm.client_dsapi
+        if model_name=="ds_v3_dsapi": 
+            selected_model = provided_llm.ds_v3_dsapi
+        elif model_name=="ds_r1_dsapi":
+            selected_model = provided_llm.ds_r1_dsapi
+        else:
+            print("Model name is incompatible with DS api or invalid")
+    elif api_type=="deepinfra_api":
+        client = provided_llm.client_deepinfra
+        if model_name=="ds_v3":
+            selected_model = provided_llm.ds_v3
+        elif model_name=="llama_33_70b":
+            selected_model = provided_llm.llama_33_70b
+        elif model_name=="ds_distil_llama_70b":
+            selected_model = provided_llm.ds_distil_llama_70b
+        else:
+            print("model name either incompatible with DeepInfra API or invalid.") 
+    elif api_type=="oai_api":
+        client = provided_llm.client_oai
+        selected_model = provided_llm.gpt_4o_mini
+    else: 
+        print("API type invalid")
+    
+    return client, selected_model
 
+def generate_pddl_with_syntax_check(api_type, model_name):
+    client, selected_model = resolve_client_and_model(api_type=api_type, model_name=model_name)
     scenario_domain_problem_data = retrieve_womdr_domain_problem_data()  
-    for id in scenario_domain_problem_data.keys():
-        print("Domain generation, generating action suggestions....\n")
-        response_action_json = client_deepinfra.chat.completions.create(
-            model=model_ds,
+    for id in tqdm(scenario_domain_problem_data.keys()):
+        print("\nDomain generation, generating action suggestions....\n")
+        response_action_json = client.chat.completions.create(
+            model=selected_model,
             messages=[
                 {"role": "user", "content": f"""
             
@@ -84,9 +131,9 @@ def generate_pddl_with_syntax_check():
             ],
             stream=False
         )
-        print("Domain generation, generating domain file....\n")
-        response_domain_initial = client_deepinfra.chat.completions.create(
-            model=model_ds,
+        print(f"\nDomain generation, generating domain file for scenario id {id}....\n")
+        response_domain_initial = client.chat.completions.create(
+            model=selected_model,
             messages=[
                 {"role": "user", "content": f"""
                 We need you to write specific driving behaviors to accomplish certain goals. A behavior is defined as actions taken in response to certain conditions. Conditions are provided as an environment state. 
@@ -123,10 +170,10 @@ def generate_pddl_with_syntax_check():
                 file.close()
 
         # Given one domain file based on a context, generate multiple problem files.
-        for interaction_id in scenario_domain_problem_data[id]["Interactions"].keys():    
-            print("Problem generation, generating problem file....\n")
-            response_problem_initial = client_deepinfra.chat.completions.create(
-                model=model_ds,
+        for interaction_id in tqdm(scenario_domain_problem_data[id]["Interactions"].keys()):    
+            print(f"\nProblem generation, generating problem file for interaction {interaction_id}....\n")
+            response_problem_initial = client.chat.completions.create(
+                model=selected_model,
                 messages=[
                     {"role": "user", "content": f"""
                     Now carefully write the PDDL problem file for the corresponding domain file provided:
@@ -146,9 +193,9 @@ def generate_pddl_with_syntax_check():
                 stream=False
             )
 
-            print("Problem generation, reviewing and updating problem file....\n")
-            response_problem_final = client_deepinfra.chat.completions.create(
-                model=model_ds,
+            print("\nProblem generation, reviewing and updating problem file....\n")
+            response_problem_final = client.chat.completions.create(
+                model=selected_model,
                 messages=[
                     {"role": "user", "content": f"""
                     Carefully read this PDDL problem file:
@@ -261,9 +308,9 @@ def generate_pddl_with_syntax_check():
             #         file.write(response_problem_final_final.choices[0].message.content) # We want to read the article as a single string, so that we can feed it to gpt.
             #         file.close()
 
-            print("LLM grading for PDDL file generation....\n")
-            response_LLM_judgement = client_deepinfra.chat.completions.create(
-                model=model_ds,
+            print("\nLLM grading for PDDL file generation....\n")
+            response_LLM_judgement = client.chat.completions.create(
+                model=selected_model,
                 messages=[
                     {"role": "user", "content": f"""
                     First, read the context information for the given scenario:
@@ -333,6 +380,8 @@ def generate_pddl_with_syntax_check():
             with open(dir_path_text_problem+"/LLM_eval_"+interaction_id+".json", "w", encoding='utf-8') as file_eval:
                         json.dump(LLM_eval_dictionary, file_eval, indent=4) # We want to read the article as a single string, so that we can feed it to gpt.
                         file.close()
+            print(f"\nPDDL problem generation complete for interaction with id {interaction_id}. Progress with interactions shown below\n")
+        print(f"\nPDDL generation complete for scenario with id {id}. Progress with scenarios shown below\n")
 
 def pddl_response_and_answer_questions():
     client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
