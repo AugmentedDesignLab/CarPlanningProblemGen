@@ -5,12 +5,13 @@ import os
 import json
 import planner # Comment out any function calls within this. 
 from openai import OpenAI
+from matplotlib import pyplot as plt
 
 ########### ============  Global initializations ====================== ##########
 domain_folder_list = os.listdir('apla-planner/generated_pddls_deepseek/dataset/domains')
 problem_folder_list = os.listdir('apla-planner/generated_pddls_deepseek/dataset/problems')
 client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-client_deepseek = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
+#client_deepseek = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 client_deepinfra = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
 scenario_domain_and_problem_data = planner.retrieve_womdr_domain_problem_data()
 
@@ -46,13 +47,13 @@ def deepinfra_call(model_name, prompt):
     output_content = output.choices[0].message.content
     return output_content
 
-def deepseek_call(model_name, prompt):
-    output = client_deepseek.chat.completions.create(model=model_name, 
-                                       messages=[{"role": "user", "content": prompt}],
-                                       stream=False
-                                    )
-    output_content = output.choices[0].message.content
-    return output_content
+#def deepseek_call(model_name, prompt):
+#    output = client_deepseek.chat.completions.create(model=model_name, 
+#                                       messages=[{"role": "user", "content": prompt}],
+#                                       stream=False
+#                                    )
+#    output_content = output.choices[0].message.content
+#    return output_content
 
 ################# ============= Grading prompts ================== ###############
 def prepare_grading_prompt(context, question, answer, model_output):
