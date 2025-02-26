@@ -3,4 +3,4 @@ generated_pddls/*
 parsed_womdr_data/*
 pddl-examples/*
 *.pddl
-__pycache__/
+__pycache__/*

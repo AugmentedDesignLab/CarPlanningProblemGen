@@ -3,7 +3,6 @@
 
 import os
 import json
-import matplotlib.pyplot as plt
 import planner # Comment out any function calls within this. 
 from openai import OpenAI
 
