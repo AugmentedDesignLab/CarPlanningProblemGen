@@ -1,7 +1,6 @@
 from jupyddl import AutomatedPlanner # Comment this line along with the other planner lines if running from outside WSL
 import os
 import json
-import matplotlib.pyplot as plt
 
 ## There is one context per scenario. Each context has a corresponding PDDL domain file.
 ## Each scenario has multiple interactions. Each interaction will have one PDDL problem file. 

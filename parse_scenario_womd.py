@@ -4,11 +4,10 @@ from openai import OpenAI
 import os
 from rouge import Rouge
 
-scenario_files = os.listdir("../car_beh_gen/datasets/training.tar/training/training/")
+scenario_files = os.listdir("../training/")
 scenario_blocklist = ['3e9622a454291617']
-
 def generate_womd_reasoning_datapoint(filename):
-    with open('../car_beh_gen/datasets/training.tar/training/training/'+filename, 'r') as file:
+    with open('./training/'+filename, 'r') as file:
         data = json.loads(file.read())
         new_data_no_interactions = {
             'environment questions': data['env_q'],
