@@ -9,7 +9,7 @@ class ProvidedLLM():
     def __init__(self):
         self.client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         self.client_deepinfra = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
-        self.client_dsapi = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
+        #self.client_dsapi = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 
         # The following are model names for DS models provided via their own API service.
         self.ds_v3_dsapi = "deepseek-chat"
