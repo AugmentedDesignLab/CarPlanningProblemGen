@@ -2,6 +2,8 @@ from openai import OpenAI
 import sys
 import subprocess
 import os
+import re
+
 
 class ProvidedLLM():
     def __init__(self):
@@ -38,3 +40,33 @@ class ProvidedLLM():
                                                          self.qw_25_7b
                                                         ] 
                                 }
+    
+    def non_thinking_llm_call(self, client, model, prompt):
+        output = client.chat.completions.create(model=model, 
+                                        messages=[{"role": "user", "content": prompt}],
+                                        stream=False
+                                        )
+        output_content = output.choices[0].message.content
+        return output_content
+    
+    # Thinking LLMs generate <think></think> tags which need to be split from the output
+    # DS api reasoner doesn't send think tags so no need for this function.
+    # Deepinfra thinking models send these tags so this function is needed.
+    def thinking_llm_call(self, client, model, prompt):
+        output = self.llm_call(client=client, model=model, prompt=prompt)
+        separated_string = re.split(r"(</think>)", output)
+        separated_string_thoughts = re.split(r"(<think>)", separated_string[0])
+        separated_string_output = separated_string[2]
+        separated_string_thoughts = separated_string_thoughts[2]
+        return separated_string_output, separated_string_thoughts
+    
+    def llm_call(self, client, model, prompt):
+        output = ""
+        thoughts = ""
+        if (model==self.ds_r1) or (model==self.ds_distil_llama_70b):
+            output, thoughts = self.thinking_llm_call(client, model, prompt)
+        else:
+            output = self.non_thinking_llm_call(client, model, prompt)
+        return output, thoughts
+
+
