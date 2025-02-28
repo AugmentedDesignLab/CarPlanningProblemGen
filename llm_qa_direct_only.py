@@ -217,7 +217,6 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
     context_word_count = scenario_domain_and_problem_data[scenario_id]["Word Count"]
 
     generated_prompt = generate_qa_prompt(context, question, answer, prompt_type)
-
     #### Step 2: Generate the model grades and add them to the dictionary
     
     for model_family in model_dictionary.keys():

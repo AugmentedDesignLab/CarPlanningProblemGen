@@ -1,0 +1,124 @@
+{
+    "_10308c69cdc96a4": {
+        "Scenario Index": 52,
+        "Interactions_0": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "8",
+                "Correctness explanation": "The AI's answer correctly identifies that surrounding agent #0 is in front of the ego agent on the same lane and that both are departing from the intersection. It also correctly notes that the ego agent is traveling faster, which is crucial for understanding the potential interaction. However, the AI does not explicitly state that surrounding agent #0 will lead the ego agent, which is a key point in the ground truth. The answer focuses more on the potential for collision rather than the leadership aspect, which slightly deviates from the ground truth.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_1": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "4",
+                "Correctness explanation": "The AI's answer incorrectly suggests that the ego agent will pass surrounding agent #1, implying an interaction. However, the ground truth clearly states that there will be no interaction as they are on different lanes and their paths do not cross. The AI's reasoning about speed and acceleration is accurate but irrelevant to the interaction, as the agents are on separate lanes.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_2": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer is partially correct in stating that surrounding agent #3 is stationary and behind the ego agent, but it fails to recognize the potential for interaction. The ground truth correctly points out that agent #3, though currently stationary, may follow the ego agent since it is positioned behind and moving in the same direction towards the intersection. The AI's conclusion that there is no interaction is incorrect because it disregards the possibility of agent #3 starting to move and following the ego agent.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_3": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer incorrectly predicts a potential collision or interaction between the ego agent and surrounding agent #4. According to the ground truth, there is no interaction because agent #4 is on a different lane and their paths do not cross. The AI misinterprets the spatial relationship and movement of the agents, leading to an incorrect conclusion.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_4": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI answer incorrectly suggests a potential interaction between the ego agent and Surrounding Agent #5, despite the ground truth stating there is no interaction. The AI's reasoning is flawed as it assumes paths may cross, but the context clearly indicates they are on different lanes, and there is no indication of their paths crossing, as per the ground truth.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_5": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "3",
+                "Correctness explanation": "The AI's answer is incorrect. While surrounding agent #6 is indeed stationary and behind the ego agent, the ground truth states that the agent will follow the ego agent, indicating a potential interaction. The AI incorrectly concluded that there would be no interaction, missing the fact that the stationary agent might start moving to follow the ego agent as they head towards the intersection.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_6": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI answer is fully correct and aligns with the ground truth. It correctly identifies that there will be no interaction between the ego agent and surrounding agent #7 because they are on different lanes, and agent #7 is stationary, posing no risk of conflict or interaction with the ego agent's path.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_7": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "6",
+                "Correctness explanation": "The AI correctly identified that surrounding agent #8 will not directly interact with the ego agent, which aligns with the ground truth. However, the AI's reasoning includes unnecessary details about potential turning maneuvers and conflict zones, which are not relevant to the scenario as the paths of the ego agent and agent #8 do not cross. The AI should have focused more on the fact that both agents are moving in opposite directions without any indication of their paths intersecting, which is the primary reason for no interaction.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_8": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer suggests an overtaking interaction between the ego agent and surrounding agent #9, but the ground truth indicates no interaction will occur. The AI incorrectly assumes the ego agent will close the distance and overtake, despite the fact that surrounding agent #9 is on a different lane and departing from the intersection, meaning their paths do not cross. This misunderstanding of the scenario's dynamics leads to an incorrect conclusion.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_9": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer is accurate and aligns with the ground truth. Both emphasize that there will be no interaction between the ego agent and surrounding agent #10 because the latter is stationary and not in motion. The AI correctly identifies that their paths do not intersect and there is no need for interaction, which matches the ground truth explanation.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_10": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's reasoning and conclusion align perfectly with the ground truth answer. It correctly identifies that surrounding agent #11 is on a different lane and departing from the intersection, ensuring no interaction with the ego agent. The explanation is detailed and logically sound.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_11": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "1",
+                "Correctness explanation": "The AI's answer is incorrect because it fails to recognize that surrounding agent #12, although currently stationary, is on the same lane as the ego agent and is heading towards the intersection. The ground truth indicates that surrounding agent #12 will follow the ego agent, implying a potential interaction. The AI's conclusion that there will be no interaction is inaccurate based on the provided context.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_12": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "3",
+                "Correctness explanation": "The AI's answer suggests a potential conflict between the ego agent and surrounding agent #13, which contradicts the ground truth stating there will be no interaction. Although the AI acknowledges the agents are in the same vicinity, it fails to recognize that their paths do not cross due to their opposite directions. The answer is partially correct in assessing proximity but incorrect in concluding potential conflict.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_13": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer is entirely correct. It accurately identifies that surrounding agent #14 and the ego agent are moving in opposite directions with no indication of their paths crossing. The reasoning provided by the AI aligns perfectly with the ground truth answer, confirming that there will be no interaction between the ego agent and surrounding agent #14.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_14": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "6",
+                "Correctness explanation": "The AI's answer is partially correct but fails to fully align with the ground truth. While it correctly identifies that surrounding agent #15 is ahead of the ego agent and moving slower, it incorrectly concludes that the ego agent will overtake without conflict. The ground truth emphasizes that surrounding agent #15 will lead the ego agent, which implies a form of interaction where the ego agent must maintain a safe distance or adjust speed, rather than overtaking without conflict. The AI's interpretation of 'no significant interaction' is inaccurate given the context of the scenario.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_15": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer incorrectly suggests that surrounding agent #16 will yield to the ego agent, which is not supported by the ground truth. The ground truth clearly states that there will be no interaction between the ego agent and surrounding agent #16 because they are heading in opposite directions and their paths do not cross. The AI's reasoning about a left turn maneuver and yielding is speculative and not aligned with the given context. The score is low because the AI's conclusion deviates significantly from the ground truth.",
+                "Word Count": "1571"
+            }
+        },
+        "Interactions_16": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "3",
+                "Correctness explanation": "The AI's answer incorrectly assumes the ego agent is likely making a left turn, which is not supported by the ground truth. The ground truth clearly states that the ego agent intends to continue heading towards the intersection while accelerating, following and leading specific surrounding agents on the same lane. The AI missed key details about the intended straight path and interactions with surrounding agents, leading to a low score.",
+                "Word Count": "1571"
+            }
+        }
+    }
+}
