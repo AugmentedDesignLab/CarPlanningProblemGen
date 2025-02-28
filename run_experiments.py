@@ -9,7 +9,7 @@ import llm_qa
 import sys
 
 print("Running the data preprocessing .... \nThe data will be in the parsed_womdr_data dictionary.")
-parse_scenario_womd.obtain_and_write_mcq_data(3, 4) # Take these two arguments via argparse or config
+parse_scenario_womd.obtain_and_write_mcq_data(78, 79) # Take these two arguments via argparse or config
 print("Completed data preprocessing!\n")
 
 print("Running the PDDL file generation...\nThe domains and problem files will get saved in the apla-planner/generated_pddls_deepseek path within the domains and problems folder.......")

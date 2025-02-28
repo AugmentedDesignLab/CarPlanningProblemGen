@@ -10,12 +10,12 @@ from openai import OpenAI
 ########### ============  Global initializations ====================== ##########
 parsed_file_list = os.listdir("parsed_womdr_data/")
 client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-client_deepseek = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
+#client_deepseek = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 client_deepinfra = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
 scenario_domain_and_problem_data = planner.retrieve_womdr_domain_problem_data()
 
 model_dictionary = {
-   "openai_models": ["gpt-4o-mini", "gpt-4.5-preview"],
+   "openai_models": ["gpt-4o-mini"],
    "deepinfra_models": [] 
 }
 
@@ -44,13 +44,13 @@ def deepinfra_call(model_name, prompt):
     output_content = output.choices[0].message.content
     return output_content
 
-def deepseek_call(model_name, prompt):
-    output = client_deepseek.chat.completions.create(model=model_name, 
-                                       messages=[{"role": "user", "content": prompt}],
-                                       stream=False
-                                    )
-    output_content = output.choices[0].message.content
-    return output_content
+# def deepseek_call(model_name, prompt):
+#     output = client_deepseek.chat.completions.create(model=model_name, 
+#                                        messages=[{"role": "user", "content": prompt}],
+#                                        stream=False
+#                                     )
+#     output_content = output.choices[0].message.content
+#     return output_content
 
 ################# ============= Grading prompts ================== ###############
 def prepare_grading_prompt(context, question, answer, model_output):
@@ -108,29 +108,120 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
         
         """
     
+    #using scenario ID 10471914b8bb79a1.json and interactions 0 and 7
+    direct_cot_prompt_2shot = f"""
+    I want you to answer some questions from the world of autonomous vehicle testing. 
+
+    Here are some examples of questions being answered:
+    First, some information about the context: "Can you describe the type of intersection present in the current driving scenario? The intersection is a 4 way intersection.What is the status of the traffic light for the ego agent at this moment? The traffic light for the ego agent is green.Is there any information about the presence of stop signs, crosswalks, or speed bumps in the current scenario? There is no information about stop signs, crosswalks, or speed bumps in the current scenario.What is the ego agent's current action within the intersection? The ego agent is turning left and exiting the intersection.Could you specify the ego agent's current speed and whether it is increasing or decreasing? The ego agent's current speed is 13 m/s and it is accelerating.How does the current traffic light affect the ego agent's movement? The traffic light is green, which allows the ego agent to proceed.What type of agent is surrounding agent #0 and what is its current motion status? Surrounding agent #0 is a vehicle and it is accelerating.How is surrounding agent #0 positioned relative to the ego agent and the intersection? Surrounding agent #0 is on the left of the ego agent, in front of it, and is departing from the intersection.What is the current speed of surrounding agent #0? The current speed of surrounding agent #0 is 8 m/s.What type of agent is surrounding agent #1 and what is its current motion status? Surrounding agent #1 is a vehicle and it is not moving.How is surrounding agent #1 positioned relative to the ego agent and the intersection? Surrounding agent #1 is on the left of the ego agent, in front of it, and is heading towards the intersection.What type of agent is surrounding agent #2 and what is its current motion status? Surrounding agent #2 is a vehicle and it is decelerating.How is surrounding agent #2 positioned relative to the ego agent and the intersection? Surrounding agent #2 is on the left of the ego agent, in front of it, and is heading towards the intersection.What is the current speed of surrounding agent #2? The current speed of surrounding agent #2 is 3 m/s.What type of agent is surrounding agent #4 and what is its current motion status? Surrounding agent #4 is a vehicle and it is not moving.How is surrounding agent #4 positioned relative to the ego agent and the intersection? Surrounding agent #4 is on the left of the ego agent, behind it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #5 and what is its current motion status? Surrounding agent #5 is a vehicle and it is not moving.How is surrounding agent #5 positioned relative to the ego agent and the intersection? Surrounding agent #5 is on the left of the ego agent, behind it, and is departing from the intersection.What type of agent is surrounding agent #6 and what is its current motion status? Surrounding agent #6 is a vehicle and it is moving at a constant speed.How is surrounding agent #6 positioned relative to the ego agent and the intersection? Surrounding agent #6 is on the left of the ego agent, behind it, and is heading towards the intersection.Is there any traffic control affecting surrounding agent #6? Surrounding agent #6 is approaching a crosswalk 4 meters ahead.What type of agent is surrounding agent #7 and what is its current motion status? Surrounding agent #7 is a vehicle and it is not moving.How is surrounding agent #7 positioned relative to the ego agent and the intersection? Surrounding agent #7 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #8 and what is its current motion status? Surrounding agent #8 is a vehicle and it is not moving.How is surrounding agent #8 positioned relative to the ego agent and the intersection? Surrounding agent #8 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent."
+
+    Question: "What interactions are expected between the ego agent and surrounding agent #0?"
+    Answer: "Surrounding agent #0 will have no interaction with the ego agent as it is departing from the intersection and their paths do not conflict."
+
+    Question: "What is the ego agent's plan in the immediate future?"
+    Answer: "The ego agent intends to complete its left turn and exit the intersection. It will proceed with the turn as the traffic light is green and it has the right of way. Surrounding agents #1 and #2 will yield to the ego agent, and surrounding agent #6 will likely stop at the crosswalk, so the ego agent does not need to alter its course in response to these agents."
+
+    Given these examples now please have a look at the following new context and try to answer the following question:
+    Here is the context: {context}
+
+    Here is the question: {question}
+
+    """
+    
+    #using interactions 0 2 4 6
     direct_cot_prompt_4shot = f"""
     I want you to answer some questions from the world of autonomous vehicle testing. 
 
     Here are some examples of questions being answered:
-    First, some information about the context: "Can you describe the current road configuration in terms of lanes? The road has three lanes.What traffic controls are present in the current driving scene? There are no traffic controls present in the current driving scene.What is the ego agent's current velocity? The ego agent's current speed is 6 meters per second.Is the ego agent's speed constant or changing? The ego agent is accelerating.Could you specify the ego agent's current lane position? The ego agent is on the first lane from the right.What is the ego agent's current direction of travel? The ego agent is heading in the same direction as its current lane.What type of agent is surrounding agent #0? Surrounding agent #0 is a vehicle.How fast is surrounding agent #0 moving at the moment? Surrounding agent #0's current speed is 5 meters per second.What is the motion status of surrounding agent #0? Surrounding agent #0 is accelerating.Where is surrounding agent #0 in relation to the ego agent? Surrounding agent #0 is 4 meters on the left and 1 meter in front of the ego agent.What direction is surrounding agent #0 facing compared to the ego agent? Surrounding agent #0 is heading in the same direction as the ego agent.What type of agent is surrounding agent #1? Surrounding agent #1 is a vehicle.What is the current speed of surrounding agent #1? Surrounding agent #1's current speed is 4 meters per second.Is surrounding agent #1 accelerating or maintaining its speed? Surrounding agent #1 is moving at a constant speed.Can you describe the position of surrounding agent #1 relative to the ego agent? Surrounding agent #1 is 24 meters behind and 3 meters on the left of the ego agent.In which direction is surrounding agent #1 moving with respect to the ego agent? Surrounding agent #1 is heading in the same direction as the ego agent.What type of agent is surrounding agent #3? Surrounding agent #3 is a vehicle.What is the current velocity of surrounding agent #3? Surrounding agent #3 is not moving.Where is surrounding agent #3 located in relation to the ego agent? Surrounding agent #3 is 4 meters in front and 4 meters on the right of the ego agent.What direction is surrounding agent #3 facing in relation to the ego agent? Surrounding agent #3 is heading in the same direction as the ego agent.What type of agent is surrounding agent #4? Surrounding agent #4 is a vehicle.What is the motion status of surrounding agent #4? Surrounding agent #4 is not moving.Can you describe the position of surrounding agent #4 with respect to the ego agent? Surrounding agent #4 is 9 meters on the right and 1 meter behind the ego agent.In which direction is surrounding agent #4 heading compared to the ego agent? Surrounding agent #4 is heading the opposite direction as the ego agent.What type of agent is surrounding agent #5? Surrounding agent #5 is a vehicle.Is surrounding agent #5 currently in motion? Surrounding agent #5 is not moving.Where is surrounding agent #5 situated in relation to the ego agent? Surrounding agent #5 is 11 meters in front and 2 meters on the right of the ego agent.What direction is surrounding agent #5 facing with respect to the ego agent? Surrounding agent #5 is heading right of the ego agent.What type of agent is surrounding agent #6? Surrounding agent #6 is a vehicle.What is the current speed of surrounding agent #6? Surrounding agent #6 is not moving.Can you describe the position of surrounding agent #6 relative to the ego agent? Surrounding agent #6 is 14 meters in front and 7 meters on the right of the ego agent.In which direction is surrounding agent #6 moving with respect to the ego agent? Surrounding agent #6 is heading right of the ego agent."  
+    First, some information about the context: "Can you describe the type of intersection present in the current driving scenario? The intersection is a 4 way intersection.What is the status of the traffic light for the ego agent at this moment? The traffic light for the ego agent is green.Is there any information about the presence of stop signs, crosswalks, or speed bumps in the current scenario? There is no information about stop signs, crosswalks, or speed bumps in the current scenario.What is the ego agent's current action within the intersection? The ego agent is turning left and exiting the intersection.Could you specify the ego agent's current speed and whether it is increasing or decreasing? The ego agent's current speed is 13 m/s and it is accelerating.How does the current traffic light affect the ego agent's movement? The traffic light is green, which allows the ego agent to proceed.What type of agent is surrounding agent #0 and what is its current motion status? Surrounding agent #0 is a vehicle and it is accelerating.How is surrounding agent #0 positioned relative to the ego agent and the intersection? Surrounding agent #0 is on the left of the ego agent, in front of it, and is departing from the intersection.What is the current speed of surrounding agent #0? The current speed of surrounding agent #0 is 8 m/s.What type of agent is surrounding agent #1 and what is its current motion status? Surrounding agent #1 is a vehicle and it is not moving.How is surrounding agent #1 positioned relative to the ego agent and the intersection? Surrounding agent #1 is on the left of the ego agent, in front of it, and is heading towards the intersection.What type of agent is surrounding agent #2 and what is its current motion status? Surrounding agent #2 is a vehicle and it is decelerating.How is surrounding agent #2 positioned relative to the ego agent and the intersection? Surrounding agent #2 is on the left of the ego agent, in front of it, and is heading towards the intersection.What is the current speed of surrounding agent #2? The current speed of surrounding agent #2 is 3 m/s.What type of agent is surrounding agent #4 and what is its current motion status? Surrounding agent #4 is a vehicle and it is not moving.How is surrounding agent #4 positioned relative to the ego agent and the intersection? Surrounding agent #4 is on the left of the ego agent, behind it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #5 and what is its current motion status? Surrounding agent #5 is a vehicle and it is not moving.How is surrounding agent #5 positioned relative to the ego agent and the intersection? Surrounding agent #5 is on the left of the ego agent, behind it, and is departing from the intersection.What type of agent is surrounding agent #6 and what is its current motion status? Surrounding agent #6 is a vehicle and it is moving at a constant speed.How is surrounding agent #6 positioned relative to the ego agent and the intersection? Surrounding agent #6 is on the left of the ego agent, behind it, and is heading towards the intersection.Is there any traffic control affecting surrounding agent #6? Surrounding agent #6 is approaching a crosswalk 4 meters ahead.What type of agent is surrounding agent #7 and what is its current motion status? Surrounding agent #7 is a vehicle and it is not moving.How is surrounding agent #7 positioned relative to the ego agent and the intersection? Surrounding agent #7 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #8 and what is its current motion status? Surrounding agent #8 is a vehicle and it is not moving.How is surrounding agent #8 positioned relative to the ego agent and the intersection? Surrounding agent #8 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent."
     
-    Question: "What interactions are anticipated between the ego agent and surrounding agent #0?"
-    Answer: "Surrounding agent #0 will overtake the ego agent as it is accelerating and will be further ahead in the future."
+    Question: "What interactions are expected between the ego agent and surrounding agent #0?"
+    Answer: "Surrounding agent #0 will have no interaction with the ego agent as it is departing from the intersection and their paths do not conflict." 
 
-    Question: "Can you predict the interaction between the ego agent and surrounding agent #4?"
-    Answer: "There will be no interaction between the ego agent and surrounding agent #4 as they are heading in opposite directions and not affecting each other's path."
+    Question: "What is the nature of the interaction between the ego agent and surrounding agent #2?"
+    Answer: "Surrounding agent #2 will yield to the ego agent as it is decelerating and heading towards the intersection while the ego agent is exiting the intersection with a green light."
 
-    Question: "What is the ego agent's plan for the immediate future?"
-    Answer: "The ego agent intends to continue on its current path and lane while accelerating. It will overtake surrounding agent #3 and pass surrounding agents #5 and #6, as they are not moving. It will also be overtaken by surrounding agent #0, which is accelerating on the left side."
+    Question: "What interaction will occur between the ego agent and surrounding agent #6?"
+    Answer: "Surrounding agent #6 will yield to the ego agent as it is on the right of the intersection and is approaching a crosswalk, indicating it may need to stop, while the ego agent is actively exiting the intersection."
 
-    Question: "What will be the nature of the interaction between the ego agent and surrounding agent #6?"
-    Answer: "The ego agent will pass surrounding agent #6 since surrounding agent #6 is stationary and the ego agent is accelerating."
+    Question:  "What kind of interaction will take place between the ego agent and surrounding agent #8?"
+    Answer: "Surrounding agent #8 will have no interaction with the ego agent as it is not moving and is on the same side of the intersection as the ego agent."
 
     Given these examples now please have a look at the following new context and try to answer the following question:
     Here is the context: {context}
 
     Here is the question: {question}
     
+    """
+
+    #using interactions 0 1 2 3 5 7
+    direct_cot_prompt_6shot = f"""
+    I want you to answer some questions from the world of autonomous vehicle testing. 
+
+    Here are some examples of questions being answered:
+    First, some information about the context: "Can you describe the type of intersection present in the current driving scenario? The intersection is a 4 way intersection.What is the status of the traffic light for the ego agent at this moment? The traffic light for the ego agent is green.Is there any information about the presence of stop signs, crosswalks, or speed bumps in the current scenario? There is no information about stop signs, crosswalks, or speed bumps in the current scenario.What is the ego agent's current action within the intersection? The ego agent is turning left and exiting the intersection.Could you specify the ego agent's current speed and whether it is increasing or decreasing? The ego agent's current speed is 13 m/s and it is accelerating.How does the current traffic light affect the ego agent's movement? The traffic light is green, which allows the ego agent to proceed.What type of agent is surrounding agent #0 and what is its current motion status? Surrounding agent #0 is a vehicle and it is accelerating.How is surrounding agent #0 positioned relative to the ego agent and the intersection? Surrounding agent #0 is on the left of the ego agent, in front of it, and is departing from the intersection.What is the current speed of surrounding agent #0? The current speed of surrounding agent #0 is 8 m/s.What type of agent is surrounding agent #1 and what is its current motion status? Surrounding agent #1 is a vehicle and it is not moving.How is surrounding agent #1 positioned relative to the ego agent and the intersection? Surrounding agent #1 is on the left of the ego agent, in front of it, and is heading towards the intersection.What type of agent is surrounding agent #2 and what is its current motion status? Surrounding agent #2 is a vehicle and it is decelerating.How is surrounding agent #2 positioned relative to the ego agent and the intersection? Surrounding agent #2 is on the left of the ego agent, in front of it, and is heading towards the intersection.What is the current speed of surrounding agent #2? The current speed of surrounding agent #2 is 3 m/s.What type of agent is surrounding agent #4 and what is its current motion status? Surrounding agent #4 is a vehicle and it is not moving.How is surrounding agent #4 positioned relative to the ego agent and the intersection? Surrounding agent #4 is on the left of the ego agent, behind it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #5 and what is its current motion status? Surrounding agent #5 is a vehicle and it is not moving.How is surrounding agent #5 positioned relative to the ego agent and the intersection? Surrounding agent #5 is on the left of the ego agent, behind it, and is departing from the intersection.What type of agent is surrounding agent #6 and what is its current motion status? Surrounding agent #6 is a vehicle and it is moving at a constant speed.How is surrounding agent #6 positioned relative to the ego agent and the intersection? Surrounding agent #6 is on the left of the ego agent, behind it, and is heading towards the intersection.Is there any traffic control affecting surrounding agent #6? Surrounding agent #6 is approaching a crosswalk 4 meters ahead.What type of agent is surrounding agent #7 and what is its current motion status? Surrounding agent #7 is a vehicle and it is not moving.How is surrounding agent #7 positioned relative to the ego agent and the intersection? Surrounding agent #7 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #8 and what is its current motion status? Surrounding agent #8 is a vehicle and it is not moving.How is surrounding agent #8 positioned relative to the ego agent and the intersection? Surrounding agent #8 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent."
+    
+    Question: "What interactions are expected between the ego agent and surrounding agent #0?"
+    Answer: "Surrounding agent #0 will have no interaction with the ego agent as it is departing from the intersection and their paths do not conflict." 
+
+    Question: "How will the ego agent and surrounding agent #1 interact as they are both near the intersection?"
+    Answer: "Surrounding agent #1 will yield to the ego agent because the ego agent has the right of way with a green traffic light and is already exiting the intersection while surrounding agent #1 is not moving."
+
+    Question: "What is the nature of the interaction between the ego agent and surrounding agent #2?"
+    Answer: "Surrounding agent #2 will yield to the ego agent as it is decelerating and heading towards the intersection while the ego agent is exiting the intersection with a green light." 
+
+    Question: "Can you describe the interaction between the ego agent and surrounding agent #4?"
+    Answer: "There will be no interaction between the ego agent and surrounding agent #4 as surrounding agent #4 is not moving and is on the same side of the intersection as the ego agent."
+
+    Question: "What will be the interaction between the ego agent and surrounding agent #7?"
+    Answer: "Surrounding agent #7 will have no interaction with the ego agent as it is not moving and is on the same side of the intersection as the ego agent."
+
+    Question: "What is the ego agent's plan in the immediate future?"
+    Answer: "The ego agent intends to complete its left turn and exit the intersection. It will proceed with the turn as the traffic light is green and it has the right of way. Surrounding agents #1 and #2 will yield to the ego agent, and surrounding agent #6 will likely stop at the crosswalk, so the ego agent does not need to alter its course in response to these agents."
+
+    Given these examples now please have a look at the following new context and try to answer the following question:
+    Here is the context: {context}
+
+    Here is the question: {question}
+
+    """
+
+    #using interactions 0 1 2 3 4 5 6 7
+    direct_cot_prompt_8shot = f"""
+    I want you to answer some questions from the world of autonomous vehicle testing. 
+
+    Here are some examples of questions being answered:
+    First, some information about the context: "Can you describe the type of intersection present in the current driving scenario? The intersection is a 4 way intersection.What is the status of the traffic light for the ego agent at this moment? The traffic light for the ego agent is green.Is there any information about the presence of stop signs, crosswalks, or speed bumps in the current scenario? There is no information about stop signs, crosswalks, or speed bumps in the current scenario.What is the ego agent's current action within the intersection? The ego agent is turning left and exiting the intersection.Could you specify the ego agent's current speed and whether it is increasing or decreasing? The ego agent's current speed is 13 m/s and it is accelerating.How does the current traffic light affect the ego agent's movement? The traffic light is green, which allows the ego agent to proceed.What type of agent is surrounding agent #0 and what is its current motion status? Surrounding agent #0 is a vehicle and it is accelerating.How is surrounding agent #0 positioned relative to the ego agent and the intersection? Surrounding agent #0 is on the left of the ego agent, in front of it, and is departing from the intersection.What is the current speed of surrounding agent #0? The current speed of surrounding agent #0 is 8 m/s.What type of agent is surrounding agent #1 and what is its current motion status? Surrounding agent #1 is a vehicle and it is not moving.How is surrounding agent #1 positioned relative to the ego agent and the intersection? Surrounding agent #1 is on the left of the ego agent, in front of it, and is heading towards the intersection.What type of agent is surrounding agent #2 and what is its current motion status? Surrounding agent #2 is a vehicle and it is decelerating.How is surrounding agent #2 positioned relative to the ego agent and the intersection? Surrounding agent #2 is on the left of the ego agent, in front of it, and is heading towards the intersection.What is the current speed of surrounding agent #2? The current speed of surrounding agent #2 is 3 m/s.What type of agent is surrounding agent #4 and what is its current motion status? Surrounding agent #4 is a vehicle and it is not moving.How is surrounding agent #4 positioned relative to the ego agent and the intersection? Surrounding agent #4 is on the left of the ego agent, behind it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #5 and what is its current motion status? Surrounding agent #5 is a vehicle and it is not moving.How is surrounding agent #5 positioned relative to the ego agent and the intersection? Surrounding agent #5 is on the left of the ego agent, behind it, and is departing from the intersection.What type of agent is surrounding agent #6 and what is its current motion status? Surrounding agent #6 is a vehicle and it is moving at a constant speed.How is surrounding agent #6 positioned relative to the ego agent and the intersection? Surrounding agent #6 is on the left of the ego agent, behind it, and is heading towards the intersection.Is there any traffic control affecting surrounding agent #6? Surrounding agent #6 is approaching a crosswalk 4 meters ahead.What type of agent is surrounding agent #7 and what is its current motion status? Surrounding agent #7 is a vehicle and it is not moving.How is surrounding agent #7 positioned relative to the ego agent and the intersection? Surrounding agent #7 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent.What type of agent is surrounding agent #8 and what is its current motion status? Surrounding agent #8 is a vehicle and it is not moving.How is surrounding agent #8 positioned relative to the ego agent and the intersection? Surrounding agent #8 is on the left of the ego agent, in front of it, and is on the same side of the intersection as the ego agent."
+    
+    Question: "What interactions are expected between the ego agent and surrounding agent #0?"
+    Answer: "Surrounding agent #0 will have no interaction with the ego agent as it is departing from the intersection and their paths do not conflict." 
+
+    Question: "How will the ego agent and surrounding agent #1 interact as they are both near the intersection?"
+    Answer: "Surrounding agent #1 will yield to the ego agent because the ego agent has the right of way with a green traffic light and is already exiting the intersection while surrounding agent #1 is not moving."
+
+    Question: "What is the nature of the interaction between the ego agent and surrounding agent #2?"
+    Answer: "Surrounding agent #2 will yield to the ego agent as it is decelerating and heading towards the intersection while the ego agent is exiting the intersection with a green light." 
+
+    Question: "Can you describe the interaction between the ego agent and surrounding agent #4?"
+    Answer: "There will be no interaction between the ego agent and surrounding agent #4 as surrounding agent #4 is not moving and is on the same side of the intersection as the ego agent."
+
+    Question: "What interaction will occur between the ego agent and surrounding agent #6?"
+    Answer: "Surrounding agent #6 will yield to the ego agent as it is on the right of the intersection and is approaching a crosswalk, indicating it may need to stop, while the ego agent is actively exiting the intersection."
+
+    Question: "What will be the interaction between the ego agent and surrounding agent #7?"
+    Answer: "Surrounding agent #7 will have no interaction with the ego agent as it is not moving and is on the same side of the intersection as the ego agent."
+
+    Question:  "What kind of interaction will take place between the ego agent and surrounding agent #8?"
+    Answer: "Surrounding agent #8 will have no interaction with the ego agent as it is not moving and is on the same side of the intersection as the ego agent."
+
+    Question: "What is the ego agent's plan in the immediate future?"
+    Answer: "The ego agent intends to complete its left turn and exit the intersection. It will proceed with the turn as the traffic light is green and it has the right of way. Surrounding agents #1 and #2 will yield to the ego agent, and surrounding agent #6 will likely stop at the crosswalk, so the ego agent does not need to alter its course in response to these agents."
+
+    Given these examples now please have a look at the following new context and try to answer the following question:
+    Here is the context: {context}
+
+    Here is the question: {question}
+
     """
     #### Step 2: Generate the model grades and add them to the dictionary
     
@@ -174,10 +265,10 @@ def pddl_response_and_answer_questions():
                                                         interaction_id=interaction_id)
             
             #Ensure that this json file by the name grades/deepseek_grades.json exists first.
-            with open("grades/direct/deepseek_grades.json", 'w') as grade_file:
-                print("Existing grades is given by {}".format(existing_grades))
-                json.dump(existing_grades, grade_file, indent=4)
-                grade_file.close()
+    with open("grades/direct/deepseek_grades.json", 'w') as grade_file:
+        print("Existing grades is given by {}".format(existing_grades))
+        json.dump(existing_grades, grade_file, indent=4)
+        grade_file.close()
 
 def main():
     pddl_response_and_answer_questions()
