@@ -1,8 +1,6 @@
 import json
-from guidance import models, gen, user, assistant, system
 from openai import OpenAI
 import os
-from rouge import Rouge
 
 scenario_files = os.listdir("../training/")
 scenario_blocklist = ['3e9622a454291617']

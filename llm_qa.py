@@ -119,6 +119,32 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
         Think step by step. Show your reasoning and answer the question. 
         
         """
+    
+    #create a set of variables called
+    #direct_prompt_cot_2shot, direct_prompt_cot_4shot, direct_prompt_cot_6shot,
+    #direct_prompt_cot_8shot (#shot refers to number of interactions(qa pair) within the same scenario ID/context)
+    #(chain of thought) before asking the question
+    #provide examples of q and a pairs. obtain the pairs
+    #from the results of the parse script. scenario using
+    #for examples should not be used for evaluation.
+    # <context from parsed data>
+    # <q and a from one interaction>
+    # <q and a from another interaction>
+    #how to create these examples: 
+    #direct_prompt = f"""
+    #     I want you to answer some questions about an autonomous vehicle test scenario. Here are some examples for some scenarios:
+    #     <context from parsed data>
+    #     <q and a from one interaction>
+    #     <q and a from another interaction>
+    #     Here is some information about an autonomous vehicle scenario:
+    #     {context}
+
+    #     Answer the following question:
+    #     {question}
+
+    #     Think step by step. Show your reasoning and answer the question. 
+        
+    #     """
 
     pddl_prompt = f"""
         Here is some context about the test scenario:
@@ -154,13 +180,13 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=pddl_prompt))
+                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=pddl_prompt)) #when creating new var replace pddl prompt w my var name (ie 4shot)
                 grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
                 existing_grades[scenario_id][interaction_id].setdefault(
-                    model_family+"_"+model_name+"_with_plan", grading_output
+                    model_family+"_"+model_name+"_with_plan", grading_output #replace _with_plan with _for_(insert variable name)
                     )
                 existing_grades[scenario_id][interaction_id].setdefault("problem_score_avg", ((grading_output["Correctness score"] + grading_output["Faithfulness score"])/2))
-    
+        print("Retrieving grades")
 
 
 def pddl_response_and_answer_questions(domain_path, problem_path, current_plan, eval_folder):
@@ -185,6 +211,7 @@ def pddl_response_and_answer_questions(domain_path, problem_path, current_plan, 
                                                             interaction_id=interaction_id)
                
                 #Ensure that this json file by the name grades/deepseek_grades.json exists first.
+                print("Editing grades")
                 with open("grades/deepseek_grades.json", 'w') as grade_file:
                     with open(eval_complete_path, 'r') as eval_file:
                         data = json.load(eval_file)
@@ -197,7 +224,7 @@ def pddl_response_and_answer_questions(domain_path, problem_path, current_plan, 
                     json.dump(existing_grades, grade_file, indent=4)
                     grade_file.close()
 
-def main():
+def run_evaluations():
     # Recover the PDDL domain file, PDDL problem file for a particular scenario and plan file. 
     for scenario_folder in domain_folder_list:
         #Scores for multiple problems (where each problem corresponds to one interaction) within one scenario
@@ -240,14 +267,17 @@ def main():
                         pddl_response_and_answer_questions(domain_path=domain_full_path, 
                                                         problem_path=problem_full_path,
                                                     current_plan=current_problem_plan, eval_folder=eval_folder)
-                    except:
-                        continue
+                    except Exception:
+                        print(type(Exception))
+                        break
                 
             else: pddlproblem_file_name = ""
     
     print("For this exp run, the final qa scores are {}".format(exp_run_qa_scores))
-    
-    plt.bar([i for i in range(len(exp_run_qa_scores))], exp_run_qa_scores)
-    plt.show()
 
+    # plt.bar([i for i in range(len(exp_run_qa_scores))], exp_run_qa_scores)
+    # plt.show()
+run_evaluations()
 #comment_test
+# domain_path = ""
+# problem_path = ""
