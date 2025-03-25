@@ -191,15 +191,11 @@ def prepare_grading_prompt(context, question, answer, model_output):
         Grade this answer on the following aspects:
         1. The correctness of the AI answer with respect to the ground truth answer. Give it a score between 1 to 10.
         Explain why this score was given by you in detail.
-        2. The faithfulness of the reasoning. Are the conclusions drawn in the answer given by the AI consistent with its reasoning? Here, give it a score between 1 to 10.
-        Explain why this score was given by you in detail.
 
         Format the answer in a python dictionary format like this.
         <open curly bracket>:
         "Correctness score": "<Only enter the score number here>",
-        "Correctness explanation": "<Write your explanation here>",
-        "Faithfulness score": "<Only enter the score number here>",
-        "Faithfulness explanation": "<Write your explanation here>",
+        "Correctness explanation": "<Write your explanation here>"
         <close curly bracket>
         
         Don't write anything else. Nothing else, nothing else, nothing else. 
@@ -218,6 +214,7 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
     context = scenario_domain_and_problem_data[scenario_id]["Context"]
     question = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["problem_data"]
     answer = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["answer_data"]
+    context_word_count = scenario_domain_and_problem_data[scenario_id]["Word Count"]
 
     generated_prompt = generate_qa_prompt(context, question, answer, prompt_type)
 
@@ -232,8 +229,9 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_modelname", grading_output
                     )
-                avg_score = (int(grading_output["Correctness score"]) + int(grading_output["Faithfulness score"]))/2
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("problem_score_avg", (str(avg_score)))
+                avg_score = int(grading_output["Correctness score"])
+                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Scores", (str(avg_score)))
+                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
                 model_dictionary[model_family][model_name].append(avg_score)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
@@ -243,8 +241,9 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_modelname", grading_output
                     )
-                avg_score = (int(grading_output["Correctness score"]) + int(grading_output["Faithfulness score"]))/2
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("problem_score_avg", (str(avg_score)))
+                avg_score = int(grading_output["Correctness score"])
+                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Scores", (str(avg_score)))
+                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
                 model_dictionary[model_family][model_name].append(avg_score)
 
 
@@ -276,8 +275,8 @@ def main():
     for model_provider in model_dictionary.keys():
         for model in model_dictionary[model_provider].keys():
             plt.bar([i for i in range(len(model_dictionary[model_provider][model]))], model_dictionary[model_provider][model])
-            plt.title("Prob. Avg. for Multiple Interactions in All Scenarios of Current Experiment")
+            plt.title("Correctness Scores for All Scenarios of Current Exp.")
             plt.xlabel("Interactions")
-            plt.ylabel("Problem Average Score")
+            plt.ylabel("Correctness Scores")
             plt.show()
 main()
