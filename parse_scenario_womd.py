@@ -79,7 +79,7 @@ def obtain_and_write_mcq_data(start, end):
         facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
         reference_context = facts["Facts about the static environment"]+facts["Facts about the ego vehicle in this environment"]+facts["Facts about the agents surrounding the ego vehicle in this environment"]
         preprocessed_data = {}
-        preprocessed_data["Size"] = os.path.getsize('../training/'+filename)
+        preprocessed_data["Size"] = os.path.getsize('../training/'+filename[:end])
         preprocessed_data["Context"] = reference_context
 
         context_word_count = len(reference_context.split(" "))
@@ -114,5 +114,5 @@ def obtain_and_write_mcq_data(start, end):
         with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
             json.dump(final_preprocessed_data, file, indent=4)
 
-obtain_and_write_mcq_data(7,8)
+obtain_and_write_mcq_data(52,53)
 
