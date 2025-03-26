@@ -3,9 +3,9 @@
 
 import os
 import json
-import matplotlib.pyplot as plt
 import planner # Comment out any function calls within this. 
 from openai import OpenAI
+from matplotlib import pyplot as plt
 
 ######## =================  LLM API calls ====================== ###########
 def openai_call(model_name, prompt):
@@ -102,6 +102,32 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
 
         Write a short answer only. Think step by step carefully and show your reasoning and how you reached a solution. 
         """
+    
+    #create a set of variables called
+    #direct_prompt_cot_2shot, direct_prompt_cot_4shot, direct_prompt_cot_6shot,
+    #direct_prompt_cot_8shot (#shot refers to number of interactions(qa pair) within the same scenario ID/context)
+    #(chain of thought) before asking the question
+    #provide examples of q and a pairs. obtain the pairs
+    #from the results of the parse script. scenario using
+    #for examples should not be used for evaluation.
+    # <context from parsed data>
+    # <q and a from one interaction>
+    # <q and a from another interaction>
+    #how to create these examples: 
+    #direct_prompt = f"""
+    #     I want you to answer some questions about an autonomous vehicle test scenario. Here are some examples for some scenarios:
+    #     <context from parsed data>
+    #     <q and a from one interaction>
+    #     <q and a from another interaction>
+    #     Here is some information about an autonomous vehicle scenario:
+    #     {context}
+
+    #     Answer the following question:
+    #     {question}
+
+    #     Think step by step. Show your reasoning and answer the question. 
+        
+    #     """
 
     pddl_prompt = f"""
         I want you to think step by step carefully and answer questions about autonomous vehicle test scenarios. Each question
@@ -154,17 +180,13 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
             for model_name in model_dictionary[model_family].keys():
                 print("Model name is {}".format(model_name))
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=pddl_prompt))
-                grading_output = eval(deepseek_call(model_name="deepseek-chat", prompt=grading_prompt))
-                print(grading_output)
+                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=pddl_prompt)) #when creating new var replace pddl prompt w my var name (ie 4shot)
+                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
                 existing_grades[scenario_id][interaction_id].setdefault(
-                    model_family+"_"+model_name+"_modelname", grading_output
+                    model_family+"_"+model_name+"_with_plan", grading_output #replace _with_plan with _for_(insert variable name)
                     )
-                avg_score = (int(grading_output["Correctness score"]) + int(grading_output["Faithfulness score"]))/2
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("problem_score_avg", (str(avg_score)))
-                model_dictionary[model_family][model_name].append((str(avg_score)))
-
-    return existing_grades   
+                existing_grades[scenario_id][interaction_id].setdefault("problem_score_avg", ((grading_output["Correctness score"] + grading_output["Faithfulness score"])/2))
+        print("Retrieving grades")
 
 
 def pddl_response_and_answer_questions(domain_path, 
@@ -200,21 +222,19 @@ def pddl_response_and_answer_questions(domain_path,
                                                             scenario_domain_and_problem_data=scenario_domain_and_problem_data)
                
                 #Ensure that this json file by the name grades/deepseek_grades.json exists first.
-                
-                with open(eval_complete_path, 'r') as eval_file:
-                    data = json.load(eval_file)
-                    existing_grades[scenario_id][interaction_id].setdefault("LLM_eval_problem_grade", data["Problem coverage"]["Grade"])
-                    existing_grades[scenario_id][interaction_id].setdefault("LLM_eval_context_word_count", data["average_context_sentence_word_count"])  
+                print("Editing grades")
+                with open("grades/deepseek_grades.json", 'w') as grade_file:
+                    with open(eval_complete_path, 'r') as eval_file:
+                        data = json.load(eval_file)
+                        existing_grades[scenario_id][interaction_id].setdefault("LLM_eval_problem_grade", data["Problem coverage"]["Grade"])
+                        existing_grades[scenario_id][interaction_id].setdefault("LLM_eval_context_word_count", data["average_context_sentence_word_count"])
+                        qa_interaction_score = existing_grades[scenario_id][interaction_id]["problem_score_avg"]*existing_grades[scenario_id][interaction_id]["LLM_eval_problem_grade"]
+                        existing_grades[scenario_id][interaction_id].setdefault("qa_interaction_score", qa_interaction_score)  
+                    print("Existing grades is given by {}".format(existing_grades))
+                    json.dump(existing_grades, grade_file, indent=4)
+                    grade_file.close()
 
-    with open("grades/deepseek_grades.json", 'w') as grade_file:
-        print("Writing now!!")
-        json.dump(existing_grades, grade_file, indent=4)
-        grade_file.close()
-    
-    return existing_grades
-        
-
-def exp_run():
+def run_evaluations():
     # Recover the PDDL domain file, PDDL problem file for a particular scenario and plan file. 
     domain_folder_list = os.listdir('apla-planner/generated_pddls_deepseek/dataset/domains')
     problem_folder_list = os.listdir('apla-planner/generated_pddls_deepseek/dataset/problems')

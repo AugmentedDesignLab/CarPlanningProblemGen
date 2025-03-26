@@ -1,0 +1,157 @@
+{
+    "10308c69cdc96a4": {
+        "Interactions_0": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "5",
+                "Correctness explanation": "The AI's answer partially aligns with the ground truth but misses a key point. While it correctly identifies the relative positions and speeds of the ego agent and surrounding agent #0, it incorrectly implies a potential collision risk and lane change need, which are not mentioned in the ground truth. The ground truth emphasizes that surrounding agent #0 will lead the ego agent, focusing on their shared direction and speed differential, without suggesting collision risks.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent with the provided context. It logically analyzes the relative speeds, positions, and acceleration of the agents, drawing conclusions about potential interactions. However, it introduces additional scenarios (collision risk, lane change) that, while plausible, are not directly supported by the ground truth. The reasoning itself is coherent and faithful to the details provided.",
+                "problem_score_avg": "6.5"
+            }
+        },
+        "Interactions_1": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI answer is incorrect as it suggests that the ego agent and surrounding agent #1 will interact, while the ground truth explicitly states they will not interact since they are on different lanes and their paths do not cross. The AI\u2019s analysis of overtaking and lane navigation is unnecessary and misleading.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The reasoning is somewhat consistent with the information provided, as the AI correctly identifies the positions and speeds of the agents. However, it fails to conclude that no interaction will occur due to their separation in lanes, which is a significant oversight in applying the given context.",
+                "problem_score_avg": "4.0"
+            }
+        },
+        "Interactions_2": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer is incorrect based on the ground truth. The ground truth states that surrounding agent #3 will follow the ego agent, but the AI incorrectly concludes that there will be a passive interaction with the ego agent passing by the stationary surrounding agent #3. The AI failed to identify that agent #3 is behind the ego agent and will follow it, which contradicts the ground truth.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The reasoning in the AI's answer is somewhat consistent with its conclusions, as it analyzes the positions and motions of the agents. However, it incorrectly interprets the situation by assuming agent #3 is stationary and does not recognize that it will follow the ego agent. This inconsistency reduces the faithfulness score.",
+                "problem_score_avg": "4.0"
+            }
+        },
+        "Interactions_3": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "1",
+                "Correctness explanation": "The AI's prediction of a potential collision or avoidance maneuver is incorrect. The ground truth clearly states that there will be no interaction because the ego agent and surrounding agent #4 are on different lanes and their paths do not cross. The AI misinterpreted the relative positions and failed to acknowledge the separation due to different lanes.",
+                "Faithfulness score": "5",
+                "Faithfulness explanation": "The AI's reasoning is partially consistent with its conclusions but contains significant errors. It correctly identified the positions and movements of the agents but incorrectly inferred a collision risk. The logic about potential avoidance maneuvers is consistent with its flawed assumption of collision risk but does not align with the ground truth.",
+                "problem_score_avg": "3.0"
+            }
+        },
+        "Interactions_4": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer suggests a potential interaction between the ego agent and surrounding agent #5, including the possibility of passing and the need for caution. However, the ground truth explicitly states that there will be no interaction because the agents are on different lanes with no indication of their paths crossing. This discrepancy makes the AI's answer incorrect.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent with its conclusions. It logically analyzes the relative positions, speeds, and directions of the ego agent and surrounding agent #5, and its conclusion about potential interactions and the need for caution follows from this analysis. However, the conclusion is flawed because it contradicts the ground truth, which is why the faithfulness score is high but not perfect.",
+                "problem_score_avg": "5.0"
+            }
+        },
+        "Interactions_5": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer incorrectly states that the ego agent will overtake surrounding agent #6, whereas the ground truth indicates that surrounding agent #6 will follow the ego agent. The AI misinterprets the motion status of surrounding agent #6, leading to an incorrect conclusion.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The reasoning is faithful to the information provided by the AI. It logically follows the details about the ego agent and surrounding agent #6, but it incorrectly interprets the motion status of surrounding agent #6, leading to a flawed conclusion.",
+                "problem_score_avg": "5.0"
+            }
+        },
+        "Interactions_6": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "1",
+                "Correctness explanation": "The AI's conclusion that an interaction will occur is incorrect. The ground truth states that there will be no interaction, as the agents are on different lanes and their paths do not cross. The AI misunderstood the situation by suggesting the ego agent would pass by surrounding agent #7, which is not supported by the context.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The reasoning is partially consistent with the provided context but leads to an incorrect conclusion. The AI correctly identifies the positions and motion statuses of the agents but fails to align this with the ground truth, which clearly states no interaction will occur. The reasoning is logical but not faithful to the correct outcome.",
+                "problem_score_avg": "3.5"
+            }
+        },
+        "Interactions_7": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "5",
+                "Correctness explanation": "The AI's conclusion that surrounding agent #8 will overtake the ego agent is partially correct, but it fails to emphasize the key point from the ground truth that their paths do not cross because they are heading in opposite directions. The AI incorrectly assumes both are departing from the intersection in the same general direction, which is not supported by the context.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The AI's reasoning is somewhat consistent with its conclusions, but it misinterprets the direction of travel for surrounding agent #8. The AI assumes both agents are departing from the intersection in the same direction, which leads to an incorrect prediction of overtaking. The reasoning should have focused on the fact that their paths do not intersect due to opposing directions.",
+                "problem_score_avg": "5.5"
+            }
+        },
+        "Interactions_8": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "3",
+                "Correctness explanation": "The AI's answer is incorrect. It suggests that the ego agent will overtake surrounding agent #9, but the ground truth clearly states that there will be no interaction because they are on different lanes and their paths do not cross. The AI failed to consider the lane difference as a critical factor in determining the lack of interaction.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The reasoning is somewhat consistent with the provided data but misses the key detail about the lanes. The AI correctly analyzed the speeds, positions, and directions but did not account for the fact that the agents are on different lanes, which is crucial for the conclusion. Thus, while the reasoning is logical, it is incomplete and led to an incorrect conclusion.",
+                "problem_score_avg": "4.5"
+            }
+        },
+        "Interactions_9": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "8",
+                "Correctness explanation": "The AI's answer is mostly correct in stating that there is no interaction between the ego agent and surrounding agent #10. However, the AI incorrectly mentions that surrounding agent #10 is in the same lane as the ego agent, which is not stated in the context. The context specifies that surrounding agent #10 is 7 meters to the left of the ego agent, not in the same lane. This inaccuracy affects the correctness of the answer.",
+                "Faithfulness score": "7",
+                "Faithfulness explanation": "The AI's reasoning is mostly consistent with its conclusions. It correctly identifies that the ego agent is moving away from a stationary surrounding agent #10, leading to no interaction. However, the AI's assumption about surrounding agent #10 being in the same lane is unfaithful to the provided context, which affects the overall faithfulness of the reasoning.",
+                "problem_score_avg": "7.5"
+            }
+        },
+        "Interactions_10": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "4",
+                "Correctness explanation": "The AI's conclusion that the ego agent will overtake surrounding agent #11 is incorrect. The ground truth explicitly states that there will be no interaction as they are on different lanes with no crossing paths. The AI failed to assert this key point, focusing instead on overtaking, which is irrelevant given the lane separation.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The reasoning is somewhat consistent but flawed. The AI correctly notes the speed and position differences but incorrectly concludes overtaking is the primary interaction. It fails to align its reasoning with the fact that lane separation means no interaction, making its conclusions inconsistent with the key detail of lane positioning.",
+                "problem_score_avg": "5.0"
+            }
+        },
+        "Interactions_11": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "1",
+                "Correctness explanation": "The AI's answer is incorrect because it contradicts the ground truth. The ground truth states that surrounding agent #12 will follow the ego agent since it is behind the ego agent on the same lane and they are both heading towards the intersection. However, the AI incorrectly claims that surrounding agent #12 is stationary and that there will be no interaction. This misinterprets the dynamics of the scenario.",
+                "Faithfulness score": "7",
+                "Faithfulness explanation": "The AI's reasoning is somewhat faithful to the provided information, as it correctly identifies the positions and directions of the ego agent and surrounding agent #12. However, it incorrectly assumes that surrounding agent #12 is stationary, which leads to an inconsistent conclusion. The reasoning itself is logical but fails to align with the ground truth due to this incorrect assumption.",
+                "problem_score_avg": "4.0"
+            }
+        },
+        "Interactions_12": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer is incorrect. The ground truth states that surrounding agent #13 will have no interaction with the ego agent as they are heading in opposite directions and their paths do not cross. The AI incorrectly concludes that the ego agent and surrounding agent #13 will interact, which contradicts the ground truth.",
+                "Faithfulness score": "5",
+                "Faithfulness explanation": "The reasoning in the AI's answer is partially faithful. The AI correctly identifies the speeds and positions of both agents but fails to correctly interpret the direction of travel. The conclusion about potential interaction is inconsistent with the reasoning, as the AI does not account for the fact that the agents are heading in opposite directions.",
+                "problem_score_avg": "3.5"
+            }
+        },
+        "Interactions_13": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "3",
+                "Correctness explanation": "The AI's conclusion that surrounding agent #14 will overtake the ego agent is incorrect. The ground truth clearly states that there will be no interaction between the two agents because they are heading in opposite directions and their paths do not cross. The AI's analysis fails to fully consider the directional context provided in the scenario.",
+                "Faithfulness score": "6",
+                "Faithfulness explanation": "The reasoning in the AI's answer is somewhat consistent with its conclusions, as it correctly identifies the positions and speeds of the agents. However, it misinterprets the impact of the directional information, leading to a conclusion that does not align with the scenario. The reasoning is partially faithful but flawed in its final interpretation.",
+                "problem_score_avg": "4.5"
+            }
+        },
+        "Interactions_14": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "7",
+                "Correctness explanation": "The AI's answer is partially correct but misses the key point that surrounding agent #15 is leading the ego agent. While the AI correctly identifies the speed difference and potential for the ego agent to approach agent #15, it fails to emphasize the leading role of agent #15 as stated in the ground truth. The focus on collision avoidance is accurate but incomplete.",
+                "Faithfulness score": "9",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent and logical. It correctly analyzes the relative speeds, positions, and directions of both agents, and its conclusions about potential interactions follow from the provided data. However, the reasoning could have more explicitly aligned with the ground truth by highlighting the leading role of agent #15.",
+                "problem_score_avg": "8.0"
+            }
+        },
+        "Interactions_15": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "1",
+                "Correctness explanation": "The AI's answer is incorrect because it suggests a potential interaction between the ego agent and surrounding agent #16, while the ground truth clearly states there will be no interaction as they are heading in opposite directions and their paths do not cross.",
+                "Faithfulness score": "5",
+                "Faithfulness explanation": "The reasoning is partially faithful but flawed. The AI correctly identifies the positions and speeds of both agents, but it incorrectly assumes a potential interaction due to the speed difference, contradicting the ground truth's assertion of no interaction due to opposite directions and non-crossing paths.",
+                "problem_score_avg": "3.0"
+            }
+        },
+        "Interactions_16": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "6",
+                "Correctness explanation": "The AI correctly identifies that the ego agent intends to continue heading towards the intersection while accelerating. However, it incorrectly suggests the possibility of the ego agent overtaking surrounding agent #0, which is not mentioned in the ground truth. Additionally, the AI does not explicitly mention that the ego agent will lead surrounding agent #6 and follow surrounding agent #15, which is a key part of the ground truth answer.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The AI's reasoning is mostly consistent with its conclusions. It accurately analyzes the ego agent's acceleration and the surrounding agents' movements, leading to the conclusion that the ego agent will continue through the intersection. However, the reasoning about potential lane changes or overtaking is not fully supported by the provided context, which slightly detracts from the faithfulness.",
+                "problem_score_avg": "7.0"
+            }
+        }
+    }
+}

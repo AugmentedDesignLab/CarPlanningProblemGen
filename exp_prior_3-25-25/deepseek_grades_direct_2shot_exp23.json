@@ -1,0 +1,67 @@
+{
+    "10035ef410fb1318": {
+        "Interactions_0": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "2",
+                "Correctness explanation": "The AI's answer is incorrect. The ground truth states that surrounding agent #0 will yield to the ego agent because it is decelerating and approaching the intersection from the opposite side while the ego agent is already in the intersection and accelerating. The AI incorrectly concludes that there will be no interaction, which contradicts the ground truth.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The reasoning in the AI's answer is internally consistent, as it logically follows from the assumption that the two agents are heading in opposite directions and are positioned on opposite sides of the intersection. However, this reasoning is flawed because it fails to account for the yielding behavior described in the ground truth.",
+                "problem_score_avg": "5.0"
+            }
+        },
+        "Interactions_1": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "6",
+                "Correctness explanation": "The AI correctly identifies that surrounding agent #2 is stationary and that the ego agent is exiting the intersection. However, the AI fails to explicitly state that surrounding agent #2 will yield to the ego agent, which is a key part of the ground truth answer. The AI's conclusion about the ego agent passing by surrounding agent #2 is plausible but lacks the clarity and precision of the ground truth.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent with the information provided. The AI correctly interprets the positions and states of both agents and draws a logical conclusion based on that information. However, the reasoning could have been more precise by explicitly mentioning the yielding behavior of surrounding agent #2, which is implied but not directly stated.",
+                "problem_score_avg": "7.0"
+            }
+        },
+        "Interactions_2": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer is entirely correct and aligns perfectly with the ground truth. It accurately states that there will be no interaction between the ego agent and surrounding agent #3, emphasizing that the latter is stationary and positioned behind the ego agent. The explanation of the ego agent exiting the intersection and moving away further supports the conclusion.",
+                "Faithfulness score": "10",
+                "Faithfulness explanation": "The reasoning in the AI's answer is fully consistent with the provided context. It correctly identifies the state of surrounding agent #3 (stationary and behind the ego agent) and logically concludes that no interaction will occur. The reasoning faithfully follows from the given information.",
+                "problem_score_avg": "10.0"
+            }
+        },
+        "Interactions_3": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "8",
+                "Correctness explanation": "The AI's answer is mostly correct but lacks the explicit mention that surrounding agent #4 will yield to the ego agent, which is the key detail in the ground truth answer. The AI correctly identifies that the ego agent can proceed without obstruction, but it does not clearly state the yielding behavior of surrounding agent #4.",
+                "Faithfulness score": "9",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent with the provided context. It accurately describes the positions and states of the ego agent and surrounding agent #4, and it logically concludes that the ego agent can proceed without interaction. However, it does not explicitly state the yielding behavior, which slightly detracts from its faithfulness.",
+                "problem_score_avg": "8.5"
+            }
+        },
+        "Interactions_4": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "6",
+                "Correctness explanation": "The AI's answer partially aligns with the ground truth. It correctly identifies that surrounding agent #5 is stationary and that the ego agent can proceed without direct conflict. However, it misses the key aspect that surrounding agent #5 will yield to the ego agent, which is a more nuanced and specific interaction described in the ground truth.",
+                "Faithfulness score": "8",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent with its conclusions. It logically deduces that there will be no conflict based on the positions and movement of the agents. However, it does not fully explore the yielding behavior mentioned in the ground truth, which slightly reduces the faithfulness of its reasoning.",
+                "problem_score_avg": "7.0"
+            }
+        },
+        "Interactions_5": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "7",
+                "Correctness explanation": "The AI correctly identifies that the interaction between the ego agent and surrounding agent #6 is minimal due to the latter being stationary and positioned behind the ego agent. However, it does not explicitly mention that surrounding agent #6 will yield to the ego agent, which is a key aspect of the ground truth answer.",
+                "Faithfulness score": "9",
+                "Faithfulness explanation": "The reasoning in the AI's answer is consistent with the conclusions drawn. The AI correctly states that the ego agent will not need to adjust its course or speed due to surrounding agent #6's stationary position and lack of path conflict, which aligns with the provided context.",
+                "problem_score_avg": "8.0"
+            }
+        },
+        "Interactions_6": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI answer correctly identifies the ego agent's intended course of action, which is to complete its left turn and exit the intersection while accelerating. It also correctly notes that the surrounding agents do not pose an immediate risk, as they are either stationary or positioned in a way that allows the ego agent to proceed without altering its course. This aligns perfectly with the ground truth answer.",
+                "Faithfulness score": "10",
+                "Faithfulness explanation": "The reasoning in the AI answer is consistent with the given context. It accurately describes the ego agent's actions and correctly interprets the positions and behaviors of the surrounding agents. The conclusions drawn are firmly based on the information provided, demonstrating faithful reasoning.",
+                "problem_score_avg": "10.0"
+            }
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import guidance
+
 import sys
 import subprocess
 import os
@@ -21,12 +21,14 @@ def retrieve_womdr_domain_problem_data():
     for i in parsed_womdr_files:
         with open("parsed_womdr_data/"+i, 'r') as scenario_file:
             scenario_data = json.load(scenario_file) 
+            print(f"number of scenarios are {scenario_data.keys()}")
             for key in scenario_data.keys():
                 # Indices here have been planned based on the Waymo Reasoning dataset files
                 scenario_domain_problem_data.setdefault(i[:-5], {
                     "Context": ""
                 })
                 scenario_domain_problem_data[i[:-5]]["Context"] = scenario_data[key]["Context"]
+                print(f"number of interactions in this scenario are {scenario_data[key]["Interactions"].keys()}")
                 for interaction_key in scenario_data[key]["Interactions"].keys():
                     scenario_domain_problem_data[i[:-5]].setdefault("Interactions", {})
                     scenario_domain_problem_data[i[:-5]]["Interactions"].setdefault(interaction_key, {

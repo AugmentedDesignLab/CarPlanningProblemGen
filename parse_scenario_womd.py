@@ -1,8 +1,6 @@
 import json
-from guidance import models, gen, user, assistant, system
 from openai import OpenAI
 import os
-from rouge import Rouge
 
 scenario_files = os.listdir("../car_beh_gen/datasets/training.tar/training_2/training/")
 scenario_blocklist = []
@@ -35,16 +33,20 @@ def process_womd_datapoint_for_mcq_gen(womd_datapoint):
         environment_facts += womd_datapoint['env_q'][index]
         environment_facts += " "
         environment_facts += womd_datapoint['env_a'][index]
+        environment_facts += " "
     
     for index in range(len(womd_datapoint['ego_q'])):
         ego_facts += womd_datapoint['ego_q'][index]
         ego_facts += " "
         ego_facts += womd_datapoint['ego_a'][index]
+        ego_facts += " "
     
     for index in range(len(womd_datapoint['sur_q'])):
         surr_facts += womd_datapoint['sur_q'][index]
         surr_facts += " "
         surr_facts += womd_datapoint['sur_a'][index]
+        if index != (len(womd_datapoint['sur_q']) - 1):
+            surr_facts += " "
 
     facts = {
                 "Facts about the static environment": environment_facts,
@@ -121,6 +123,24 @@ def obtain_and_write_data(start, end):
         preprocessed_data = {}
         preprocessed_data["Size"] = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)
         preprocessed_data["Context"] = reference_context
+
+        context_word_count = len(reference_context.split(" "))
+        #print(reference_context.split(" "))
+        preprocessed_data["Word Count"] = context_word_count
+        #total_word_count_sentence = 0
+        # for sentence_index in range(len(context_sentence_list)): 
+        #          total_word_count_sentence += len(context_sentence_list[sentence_index].split(" "))
+            
+        # average_word_count_sentence = total_word_count_sentence / len(context_sentence_list)
+        #print(average_word_count_sentence)
+        #print(context_word_count)
+        if preprocessed_data['Size'] > 10000:
+            preprocessed_data['Scenario Category'] = "C"
+        elif 6000 <= preprocessed_data['Size'] < 9999:
+            preprocessed_data['Scenario Category'] = "B"
+        elif preprocessed_data['Size'] < 6000:
+            preprocessed_data['Scenario Category'] = "A"
+
         preprocessed_data["Interactions"] = {}
         for i in range(len(mcq_info)): #Iterate over the mcqs generated
             original_qa_data = {}
@@ -135,3 +155,6 @@ def obtain_and_write_data(start, end):
 
         with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
             json.dump(final_preprocessed_data, file, indent=4)
+
+obtain_and_write_data(52,53)
+
