@@ -21,11 +21,12 @@ for scenario_folder in domain_folder_list:
 
     # We will traverse the problem list since there will be only one domain per scenario
 
-    plans_for_one_scenario = {}
     problem_coverage_scores = []
     problem_initial_state_sizes = []
     print("Scenario ID is {}".format(scenario_folder))
     for problem_file_name in problems_within_scenario:
+        print(f"Considering problem file {problem_file_name}")
+        plans_for_one_scenario = {}
         problem_full_path = "dataset/problems/"+scenario_folder+"/"+problem_file_name
         domain_full_path = "dataset/domains/"+scenario_folder+"/"+domains_within_scenario[0]
         print("Planner is now running for the problem {}".format(problem_file_name))
@@ -38,6 +39,5 @@ for scenario_folder in domain_folder_list:
         except:
             continue
 
-
-    with open("dataset/problems/"+scenario_folder+"/plan_set.json", 'w') as file:
-        json.dump(plans_for_one_scenario, file)
+        with open("dataset/problems/"+scenario_folder+"/"+problem_file_name+"_"+"plan_set.json", 'w') as file:
+            json.dump(plans_for_one_scenario, file)

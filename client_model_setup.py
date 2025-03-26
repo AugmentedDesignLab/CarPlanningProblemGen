@@ -18,6 +18,7 @@ class ProvidedLLM():
         # The following are model names for Large DeepInfra provided models
         self.ds_v3 = "deepseek-ai/DeepSeek-V3"
         self.ds_r1 = "deepseek-ai/DeepSeek-R1" # This model thinks. Cannot use for json output
+        self.ds_r1_turbo = "deepseek-ai/DeepSeek-R1-Turbo"
         self.llama_33_70b = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
         self.llama_31_405b = "meta-llama/Meta-Llama-3.1-405B-Instruct"
         self.qw_25_72b = "Qwen/Qwen2.5-72B-Instruct"
@@ -32,6 +33,7 @@ class ProvidedLLM():
         # The following are the small model names for models provided via the OpenAI API service
         self.gpt_4o_mini = "gpt-4o-mini"
         self.o3_mini = "o3-mini"
+        self.gpt_45 = "gpt-4.5-preview"
 
         self.model_dictionary = {
                                     "openai_models": [self.gpt_4o_mini, self.o3_mini],
@@ -53,7 +55,11 @@ class ProvidedLLM():
     # DS api reasoner doesn't send think tags so no need for this function.
     # Deepinfra thinking models send these tags so this function is needed.
     def thinking_llm_call(self, client, model, prompt):
-        output = self.llm_call(client=client, model=model, prompt=prompt)
+        output_content = client.chat.completions.create(model=model, 
+                                        messages=[{"role": "user", "content": prompt}],
+                                        stream=False
+                                        )
+        output = output_content.choices[0].message.content
         separated_string = re.split(r"(</think>)", output)
         separated_string_thoughts = re.split(r"(<think>)", separated_string[0])
         separated_string_output = separated_string[2]
@@ -63,7 +69,7 @@ class ProvidedLLM():
     def llm_call(self, client, model, prompt):
         output = ""
         thoughts = ""
-        if (model==self.ds_r1) or (model==self.ds_distil_llama_70b):
+        if (model==self.ds_r1) or (model==self.ds_distil_llama_70b) or (model==self.ds_r1_turbo):
             output, thoughts = self.thinking_llm_call(client, model, prompt)
         else:
             output = self.non_thinking_llm_call(client, model, prompt)

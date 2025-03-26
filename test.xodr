@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OpenDRIVE xmlns="http://www.opendrive.org/1.6/standard">
+    <header revMajor="1" revMinor="6" name="SimpleIntersection_Corrected" version="1.1" date="2024-07-27T11:00:00" north="0.0" south="0.0" east="0.0" west="0.0" vendor="ManualExample">
+        <!-- Corrected geometry alignment for a simple 4-way intersection -->
+        <!-- Junction Radius: 15.0m, Lane Width: 3.5m -->
+        <!-- Right-Hand Traffic assumed (driving lane ID = -1) -->
+    </header>
+
+    <!-- Junction Definition -->
+    <junction id="1" name="CentralIntersection">
+        <!-- Connections: Link incoming approach roads to internal connecting roads -->
+        <!-- Straights -->
+        <connection id="1" incomingRoad="10" connectingRoad="101" contactPoint="start"> <!-- S -> N -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="2" incomingRoad="12" connectingRoad="102" contactPoint="start"> <!-- N -> S -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="3" incomingRoad="11" connectingRoad="103" contactPoint="start"> <!-- W -> E -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="4" incomingRoad="13" connectingRoad="104" contactPoint="start"> <!-- E -> W -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <!-- Left Turns -->
+        <connection id="5" incomingRoad="10" connectingRoad="105" contactPoint="start"> <!-- S -> E -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="6" incomingRoad="11" connectingRoad="106" contactPoint="start"> <!-- W -> N -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="7" incomingRoad="12" connectingRoad="107" contactPoint="start"> <!-- N -> W -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="8" incomingRoad="13" connectingRoad="108" contactPoint="start"> <!-- E -> S -->
+            <laneLink from="-1" to="-1"/>
+        </connection>
+    </junction>
+
+    <!-- Approach Roads (Outside Junction) -->
+    <!-- Road 10: South Approach (Driving North) -->
+    <road id="10" name="South Approach" length="50.0" junction="-1">
+        <link>
+            <successor elementType="junction" elementId="1"/>
+        </link>
+        <type s="0.0" type="town">
+            <speed max="50" unit="km/h"/>
+        </type>
+        <planView>
+            <!-- Starts 50m south of junction boundary (-15m), total y=-65m -->
+            <geometry s="0.0" x="0.0" y="-65.0" hdg="1.5707963267948966" length="50.0"> <!-- hdg=pi/2 -->
+                <line/>
+            </geometry>
+        </planView>
+        <lanes>
+            <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/>
+            <laneSection s="0.0">
+                <center>
+                    <lane id="0" type="none" level="false"/>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/>
+                        <!-- At s=50.0 (end), lane center is at global (1.75, -15.0) -->
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <!-- Road 11: West Approach (Driving East) -->
+    <road id="11" name="West Approach" length="50.0" junction="-1">
+        <link>
+            <successor elementType="junction" elementId="1"/>
+        </link>
+        <type s="0.0" type="town">
+            <speed max="50" unit="km/h"/>
+        </type>
+        <planView>
+            <!-- Starts 50m west of junction boundary (-15m), total x=-65m -->
+            <geometry s="0.0" x="-65.0" y="0.0" hdg="0.0" length="50.0">
+                <line/>
+            </geometry>
+        </planView>
+        <lanes>
+            <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/>
+            <laneSection s="0.0">
+                <center>
+                    <lane id="0" type="none" level="false"/>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/>
+                         <!-- At s=50.0 (end), lane center is at global (-15.0, -1.75) -->
+                   </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <!-- Road 12: North Approach (Driving South) -->
+    <road id="12" name="North Approach" length="50.0" junction="-1">
+        <link>
+            <!-- Road defined starting North (s=0 at y=65), driving South towards junction -->
+            <!-- Connects to junction at s=50.0 (road end) -->
+            <predecessor elementType="junction" elementId="1"/>
+        </link>
+         <type s="0.0" type="town">
+            <speed max="50" unit="km/h"/>
+        </type>
+        <planView>
+            <!-- Starts 50m north of junction boundary (+15m), total y=+65m -->
+            <geometry s="0.0" x="0.0" y="65.0" hdg="4.71238898038469" length="50.0"> <!-- hdg=3pi/2 -->
+                <line/>
+            </geometry>
+        </planView>
+        <lanes>
+            <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/>
+            <laneSection s="0.0">
+                <center>
+                    <lane id="0" type="none" level="false"/>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/>
+                        <!-- At s=50.0 (end), lane center is at global (-1.75, 15.0) -->
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <!-- Road 13: East Approach (Driving West) -->
+    <road id="13" name="East Approach" length="50.0" junction="-1">
+        <link>
+            <!-- Road defined starting East (s=0 at x=65), driving West towards junction -->
+            <!-- Connects to junction at s=50.0 (road end) -->
+            <predecessor elementType="junction" elementId="1"/>
+        </link>
+        <type s="0.0" type="town">
+            <speed max="50" unit="km/h"/>
+        </type>
+        <planView>
+             <!-- Starts 50m east of junction boundary (+15m), total x=+65m -->
+           <geometry s="0.0" x="65.0" y="0.0" hdg="3.141592653589793" length="50.0"> <!-- hdg=pi -->
+                <line/>
+            </geometry>
+        </planView>
+        <lanes>
+            <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/>
+            <laneSection s="0.0">
+                <center>
+                    <lane id="0" type="none" level="false"/>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/>
+                        <!-- At s=50.0 (end), lane center is at global (15.0, 1.75) -->
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+
+    <!-- Connecting Roads (Inside Junction, junction="1") -->
+    <!-- Calculations: R=15.0, LW=3.5, HLW=1.75, SL=30.0, TR=13.25, TAL=20.813 -->
+
+    <!-- Road 101: Connecting S -> N (Straight) -->
+    <road id="101" name="Conn_S_N" length="30.0" junction="1">
+        <planView>
+             <!-- Starts at incoming lane center (1.75, -15.0), heads North -->
+            <geometry s="0.0" x="1.75" y="-15.0" hdg="1.5707963267948966" length="30.0"> <!-- hdg=pi/2 -->
+                <line/>
+            </geometry>
+            <!-- Ends at (1.75, 15.0) -->
+        </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 102: Connecting N -> S (Straight) -->
+    <road id="102" name="Conn_N_S" length="30.0" junction="1">
+        <planView>
+            <!-- Starts at incoming lane center (-1.75, 15.0), heads South -->
+            <geometry s="0.0" x="-1.75" y="15.0" hdg="4.71238898038469" length="30.0"> <!-- hdg=3pi/2 -->
+                <line/>
+            </geometry>
+             <!-- Ends at (-1.75, -15.0) -->
+       </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 103: Connecting W -> E (Straight) -->
+    <road id="103" name="Conn_W_E" length="30.0" junction="1">
+        <planView>
+            <!-- Starts at incoming lane center (-15.0, -1.75), heads East -->
+            <geometry s="0.0" x="-15.0" y="-1.75" hdg="0.0" length="30.0">
+                <line/>
+            </geometry>
+            <!-- Ends at (15.0, -1.75) -->
+        </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 104: Connecting E -> W (Straight) -->
+    <road id="104" name="Conn_E_W" length="30.0" junction="1">
+        <planView>
+             <!-- Starts at incoming lane center (15.0, 1.75), heads West -->
+           <geometry s="0.0" x="15.0" y="1.75" hdg="3.141592653589793" length="30.0"> <!-- hdg=pi -->
+                <line/>
+            </geometry>
+             <!-- Ends at (-15.0, 1.75) -->
+       </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 105: Connecting S -> E (Left Turn Arc) -->
+    <road id="105" name="Conn_S_E" length="20.81349332479131" junction="1"> <!-- len = pi/2 * 13.25 -->
+        <planView>
+            <!-- Starts near S approach end lane center (1.75, -15.0), heading N (pi/2), turns E via CCW arc -->
+            <!-- Arc start point on lane turning circle: (1.75, -13.25) -->
+            <geometry s="0.0" x="1.75" y="-13.25" hdg="1.5707963267948966" length="20.81349332479131"> <!-- hdg=pi/2 -->
+                <arc curvature="0.07547169811320755"/> <!-- Curvature = 1/13.25 -->
+            </geometry>
+             <!-- Ends near (13.25, 1.75) -->
+       </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 106: Connecting W -> N (Left Turn Arc) -->
+    <road id="106" name="Conn_W_N" length="20.81349332479131" junction="1">
+        <planView>
+             <!-- Starts near W approach end lane center (-15.0, -1.75), heading E (0), turns N via CCW arc -->
+             <!-- Arc start point on lane turning circle: (-13.25, -1.75) -->
+           <geometry s="0.0" x="-13.25" y="-1.75" hdg="0.0" length="20.81349332479131">
+                <arc curvature="0.07547169811320755"/>
+            </geometry>
+            <!-- Ends near (1.75, 13.25) -->
+        </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 107: Connecting N -> W (Left Turn Arc) -->
+    <road id="107" name="Conn_N_W" length="20.81349332479131" junction="1">
+        <planView>
+            <!-- Starts near N approach end lane center (-1.75, 15.0), heading S (3pi/2), turns W via CCW arc -->
+            <!-- Arc start point on lane turning circle: (-1.75, 13.25) -->
+            <geometry s="0.0" x="-1.75" y="13.25" hdg="4.71238898038469" length="20.81349332479131"> <!-- hdg=3pi/2 -->
+                <arc curvature="0.07547169811320755"/>
+            </geometry>
+            <!-- Ends near (-13.25, -1.75) -->
+        </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+    <!-- Road 108: Connecting E -> S (Left Turn Arc) -->
+    <road id="108" name="Conn_E_S" length="20.81349332479131" junction="1">
+        <planView>
+            <!-- Starts near E approach end lane center (15.0, 1.75), heading W (pi), turns S via CCW arc -->
+            <!-- Arc start point on lane turning circle: (13.25, 1.75) -->
+            <geometry s="0.0" x="13.25" y="1.75" hdg="3.141592653589793" length="20.81349332479131"> <!-- hdg=pi -->
+                <arc curvature="0.07547169811320755"/>
+            </geometry>
+            <!-- Ends near (-1.75, -13.25) -->
+        </planView>
+        <lanes> <laneOffset s="0.0" a="0.0" b="0.0" c="0.0" d="0.0"/> <laneSection s="0.0"> <center> <lane id="0" type="none" level="false"/> </center> <right> <lane id="-1" type="driving" level="false"> <width sOffset="0.0" a="3.5" b="0.0" c="0.0" d="0.0"/> </lane> </right> </laneSection> </lanes>
+    </road>
+
+</OpenDRIVE>

@@ -222,6 +222,7 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
     for model_family in model_dictionary.keys():
         if model_family=="openai_models":
             for model_name in model_dictionary[model_family]:
+                predicted_answer = openai_call(model_name=model_name, prompt=generated_prompt)
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
                                        answer=answer, model_output=openai_call(model_name=model_name, prompt=generated_prompt))
                 grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
@@ -236,6 +237,7 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 model_dictionary[model_family][model_name].append(correctness)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
+                predicted_answer = deepinfra_call(model_name=model_name, prompt=generated_prompt)
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
                                        answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=generated_prompt))
                 grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
