@@ -3,8 +3,7 @@
 
 import os
 import json
-import matplotlib.pyplot as plt
-import planner # Comment out any function calls within this. 
+import matplotlib.pyplot as plt 
 from openai import OpenAI
 
 ########### ============  Global initializations ====================== ##########
