@@ -4,11 +4,12 @@ from openai import OpenAI
 import os
 from rouge import Rouge
 
-scenario_files = os.listdir("../car_beh_gen/datasets/training.tar/training/training/")
-scenario_blocklist = ['3e9622a454291617']
+scenario_files = os.listdir("../car_beh_gen/datasets/training.tar/training_2/training/")
+scenario_blocklist = []
 
 def generate_womd_reasoning_datapoint(filename):
-    with open('../car_beh_gen/datasets/training.tar/training/training/'+filename, 'r') as file:
+    print("File size is {}".format(os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)))
+    with open('../car_beh_gen/datasets/training.tar/training_2/training/'+filename, 'r') as file:
         data = json.loads(file.read())
         new_data_no_interactions = {
             'environment questions': data['env_q'],
@@ -61,7 +62,47 @@ def process_womd_datapoint_for_mcq_gen(womd_datapoint):
     return facts, mcq_qa_information
 
 
-def obtain_and_write_mcq_data(start, end):
+def obtain_and_write_data_smallest(start, end):
+    filesize = 100000
+    smallest_filename = ""
+    for filename in scenario_files[start:end]:
+        file_size = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)
+        if file_size < filesize: 
+            filesize = file_size
+            smallest_filename = filename
+    #for filename in scenario_files[start:end]:
+    blocklist_match = False
+    final_preprocessed_data = {}
+    womd_datapoint = generate_womd_reasoning_datapoint(filename=smallest_filename)
+    id = womd_datapoint['sid']
+
+    # Add bad scenarios to the blocklist
+    for blocklist_id in scenario_blocklist:
+        if blocklist_id==id: 
+            blocklist_match = True
+    if blocklist_match==True:
+        return #skip this iteration
+    
+    facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
+    reference_context = facts["Facts about the static environment"]+facts["Facts about the ego vehicle in this environment"]+facts["Facts about the agents surrounding the ego vehicle in this environment"]
+    preprocessed_data = {}
+    preprocessed_data["Context"] = reference_context
+    preprocessed_data["Interactions"] = {}
+    for i in range(len(mcq_info)): #Iterate over the mcqs generated
+        original_qa_data = {}
+        reference_question = womd_datapoint['int_q'][i]
+        reference_answer = womd_datapoint['int_a'][i]
+            
+        original_qa_data["reference_question"] = reference_question
+        original_qa_data["reference_answer"] = reference_answer
+        preprocessed_data["Interactions"]["Interactions_"+str(i)] = original_qa_data
+
+    final_preprocessed_data[str(id)] = preprocessed_data
+
+    with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
+        json.dump(final_preprocessed_data, file, indent=4)
+
+def obtain_and_write_data(start, end):
     for filename in scenario_files[start:end]:
         blocklist_match = False
         final_preprocessed_data = {}
@@ -78,13 +119,14 @@ def obtain_and_write_mcq_data(start, end):
         facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
         reference_context = facts["Facts about the static environment"]+facts["Facts about the ego vehicle in this environment"]+facts["Facts about the agents surrounding the ego vehicle in this environment"]
         preprocessed_data = {}
+        preprocessed_data["Size"] = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)
         preprocessed_data["Context"] = reference_context
         preprocessed_data["Interactions"] = {}
         for i in range(len(mcq_info)): #Iterate over the mcqs generated
             original_qa_data = {}
             reference_question = womd_datapoint['int_q'][i]
             reference_answer = womd_datapoint['int_a'][i]
-             
+                
             original_qa_data["reference_question"] = reference_question
             original_qa_data["reference_answer"] = reference_answer
             preprocessed_data["Interactions"]["Interactions_"+str(i)] = original_qa_data
@@ -93,4 +135,3 @@ def obtain_and_write_mcq_data(start, end):
 
         with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
             json.dump(final_preprocessed_data, file, indent=4)
-

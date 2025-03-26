@@ -31,14 +31,12 @@ scenario_domain_and_problem_data = planner.retrieve_womdr_domain_problem_data()
 # "o3-mini"
 
 model_dictionary = {
-   "openai_models": {
-       "gpt-4o-mini": []
-       },
-   "deepinfra_models":{
-       
-   } 
-}
-
+    "openai_models": {
+        "o3-mini": []
+        },
+    "deepinfra_models": {
+    } 
+    }
 # Generate two lists - domain file list and problem file list for a single scenario
 # Reuse code in terms of classes and functions and 
 
@@ -165,25 +163,29 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
     for model_family in model_dictionary.keys():
         if model_family=="openai_models":
             for model_name in model_dictionary[model_family]:
+                predicted_answer = openai_call(model_name=model_name, prompt=generated_prompt)
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=openai_call(model_name=model_name, prompt=generated_prompt))
-                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
-                existing_grades[scenario_id][interaction_id].setdefault(
-                    model_family+"_"+model_name+"_modelname", grading_output
-                    )
-                avg_score = (int(grading_output["Correctness score"]) + int(grading_output["Faithfulness score"]))/2
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("problem_score_avg", (str(avg_score)))
+                                       answer=answer, model_output=predicted_answer)
+                grading_output = eval(deepseek_call(model_name="deepseek-chat", prompt=grading_prompt))
+                model_dictionary_key = model_family+"_"+model_name+"_modelname"
+                existing_grades[scenario_id][interaction_id].setdefault(model_dictionary_key, grading_output)
+                existing_grades[scenario_id][interaction_id][model_dictionary_key].setdefault("Predicted Answer", predicted_answer)
+                existing_grades[scenario_id][interaction_id][model_dictionary_key].setdefault("Reference Answer", answer)
+                avg_score = int(((int(grading_output["Correctness score"])) + int(grading_output["Faithfulness score"]))/2)
+                existing_grades[scenario_id][interaction_id][model_dictionary_key].setdefault("problem_score_avg", (str(avg_score)))
                 model_dictionary[model_family][model_name].append(avg_score)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
+                predicted_answer = deepinfra_call(model_name=model_name, prompt=generated_prompt)
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=generated_prompt))
-                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
-                existing_grades[scenario_id][interaction_id].setdefault(
-                    model_family+"_"+model_name+"_modelname", grading_output
-                    )
-                avg_score = (int(grading_output["Correctness score"]) + int(grading_output["Faithfulness score"]))/2
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("problem_score_avg", (str(avg_score)))
+                                       answer=answer, model_output=predicted_answer)
+                grading_output = eval(deepseek_call(model_name="deepseek-chat", prompt=grading_prompt))
+                model_dictionary_key = model_family+"_"+model_name+"_modelname"
+                existing_grades[scenario_id][interaction_id].setdefault(model_dictionary_key, grading_output)
+                existing_grades[scenario_id][interaction_id][model_dictionary_key].setdefault("Predicted Answer", predicted_answer)
+                existing_grades[scenario_id][interaction_id][model_dictionary_key].setdefault("Reference Answer", answer)
+                avg_score = int(((int(grading_output["Correctness score"])) + int(grading_output["Faithfulness score"]))/2)
+                existing_grades[scenario_id][interaction_id][model_dictionary_key].setdefault("problem_score_avg", (str(avg_score)))
                 model_dictionary[model_family][model_name].append(avg_score)
 
 
@@ -215,5 +217,7 @@ def main():
     for model_provider in model_dictionary.keys():
         for model in model_dictionary[model_provider].keys():
             plt.bar([i for i in range(len(model_dictionary[model_provider][model]))], model_dictionary[model_provider][model])
+            plt.title(f"Graph of avg scores for the model {model}")
+            plt.xlabel("Avg of correctness/faithfulness")
             plt.show()
 main()
