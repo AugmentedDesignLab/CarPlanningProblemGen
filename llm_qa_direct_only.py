@@ -284,19 +284,4 @@ def main():
             plt.ylabel("Correctness Scores")
             plt.show()
 
-    #gathering the average correctness from grades json files with
-    #x axis representing 0, 2, 4, 6 shot and y axis representing
-    #correctness average score per experiment
-    # folder_path = '..grades/direct'
-    # allowed_files = ['deepseek_grades_direct_0shot_exp1.json', 'deepseek_grades_direct_2shot_exp2.json', 
-    #                  'deepseek_grades_direct_4shot_exp3.json', 'deepseek_grades_direct_6shot_exp4.json']
-    # correctness_avg = []
-    # prompting_label = []
-    # for filename in os.listdir(folder_path):
-    #     if filename in allowed_files:
-    #         filepath = os.path.join(folder_path, filename)
-    #         with open(filepath, 'r') as jsonfile:
-    #             for line in jsonfile:
-    #                 if 
-
 main()
