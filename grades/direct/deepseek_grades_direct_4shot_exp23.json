@@ -1,0 +1,53 @@
+{
+    "10035ef410fb1318": {
+        "Interactions_0": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "8",
+                "Correctness explanation": "The AI's answer correctly identifies that surrounding agent #0 is decelerating and heading in the opposite direction, which suggests it will yield to the ego agent. However, the AI incorrectly states that there will be no interaction, whereas the ground truth emphasizes that there is an interaction where surrounding agent #0 yields to the ego agent. The AI's conclusion about no interaction is partially correct but lacks precision in describing the nature of the interaction.",
+                "Word Count": "789"
+            }
+        },
+        "Interactions_1": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer is fully aligned with the ground truth. It correctly identifies that surrounding agent #2 will yield to the ego agent, as it is not moving and is already in the intersection, while the ego agent is exiting the intersection. The AI also accurately describes the positions and actions of both agents, emphasizing that there will be no conflict, which matches the ground truth.",
+                "Word Count": "789"
+            }
+        },
+        "Interactions_2": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer is entirely correct. It accurately states that there will be no interaction between the ego agent and surrounding agent #3 because surrounding agent #3 is stationary and positioned behind the ego agent. This aligns perfectly with the ground truth answer, which also indicates no interaction due to the same reasons.",
+                "Word Count": "789"
+            }
+        },
+        "Interactions_3": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "7",
+                "Correctness explanation": "The AI correctly identifies that surrounding agent #4 will yield to the ego agent, which aligns with the ground truth. However, the AI incorrectly concludes that there will be no interaction, whereas the ground truth implies that yielding itself is a form of interaction. The AI's reasoning about the absence of conflict is partially correct but fails to fully capture the interaction as described in the ground truth.",
+                "Word Count": "789"
+            }
+        },
+        "Interactions_4": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "5",
+                "Correctness explanation": "The AI answer incorrectly states that there will be no interaction between the ego agent and surrounding agent #5, whereas the ground truth indicates that surrounding agent #5 will yield to the ego agent. While the AI correctly identifies that surrounding agent #5 is stationary and positioned to the left, it fails to infer the yielding behavior, which is a key aspect of the interaction.",
+                "Word Count": "789"
+            }
+        },
+        "Interactions_5": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "5",
+                "Correctness explanation": "The AI's answer is partially correct in stating that surrounding agent #6 is not moving and is on the same side of the intersection, but it incorrectly concludes that there will be no interaction. The ground truth specifies that surrounding agent #6 will yield to the ego agent, implying an interaction. The AI missed this critical detail, leading to a lower score.",
+                "Word Count": "789"
+            }
+        },
+        "Interactions_6": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer accurately reflects the ground truth. It correctly identifies the ego agent's intention to complete its left turn and exit the intersection, and it also notes that the ego agent is accelerating while doing so. The explanation aligns perfectly with the context provided, making the answer fully correct.",
+                "Word Count": "789"
+            }
+        }
+    }
+}

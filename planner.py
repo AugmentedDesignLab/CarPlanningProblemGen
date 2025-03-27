@@ -26,6 +26,7 @@ def retrieve_womdr_domain_problem_data():
                     "Context": ""
                 })
                 scenario_domain_problem_data[i[:-5]]["Context"] = scenario_data[key]["Context"]
+                scenario_domain_problem_data[i[:-5]]["Word Count"] = scenario_data[key]["Word Count"]
                 print(f"number of interactions in this scenario are {scenario_data[key]["Interactions"].keys()}")
                 for interaction_key in scenario_data[key]["Interactions"].keys():
                     scenario_domain_problem_data[i[:-5]].setdefault("Interactions", {})

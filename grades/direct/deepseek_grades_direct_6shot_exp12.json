@@ -1,0 +1,18 @@
+{
+    "14d9a71cba4b4b26": {
+        "Interactions_0": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "10",
+                "Correctness explanation": "The AI's answer is fully aligned with the ground truth. It correctly identifies that the ego agent must yield to surrounding agent #0 because the ego agent is at a stop sign, while surrounding agent #0 is not required to stop and is approaching from the right. The explanation of the anticipated interaction, including the ego agent stopping and allowing surrounding agent #0 to pass before proceeding, is accurate and complete.",
+                "Word Count": "322"
+            }
+        },
+        "Interactions_1": {
+            "openai_models_gpt-4o-mini_modelname": {
+                "Correctness score": "7",
+                "Correctness explanation": "The AI answer correctly identifies that the ego agent will stop at the stop sign and assess the traffic situation. However, it does not explicitly mention that the ego agent will yield to surrounding agent #0, which is a critical part of the ground truth answer. The AI also does not clearly state that the ego agent will proceed through the intersection after yielding, which is another important aspect of the ground truth. The answer is partially correct but lacks some key details.",
+                "Word Count": "322"
+            }
+        }
+    }
+}

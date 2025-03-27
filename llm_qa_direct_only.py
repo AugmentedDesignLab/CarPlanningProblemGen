@@ -166,7 +166,7 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
 
     if prompt_type=="4shot":
         return direct_cot_prompt_4shot
-    elif prompt_type=="direct":
+    elif prompt_type=="0shot":
         return direct_prompt
     elif prompt_type=="2shot":
         return direct_cot_prompt_2shot
@@ -229,10 +229,12 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_modelname", grading_output
                     )
-                avg_score = int(grading_output["Correctness score"])
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Scores", (str(avg_score)))
+                correctness = int(grading_output["Correctness score"])
+
+                #existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Average", (str(correctness)))
+
                 existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
-                model_dictionary[model_family][model_name].append(avg_score)
+                model_dictionary[model_family][model_name].append(correctness)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
@@ -241,10 +243,12 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_modelname", grading_output
                     )
-                avg_score = int(grading_output["Correctness score"])
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Scores", (str(avg_score)))
+                correctness = int(grading_output["Correctness score"])
+
+                #existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Score", (str(total_correctness_average)))
+
                 existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
-                model_dictionary[model_family][model_name].append(avg_score)
+                model_dictionary[model_family][model_name].append(correctness)
 
 
 def pddl_response_and_answer_questions(prompt_type="4shot"):
@@ -279,4 +283,20 @@ def main():
             plt.xlabel("Interactions")
             plt.ylabel("Correctness Scores")
             plt.show()
+
+    #gathering the average correctness from grades json files with
+    #x axis representing 0, 2, 4, 6 shot and y axis representing
+    #correctness average score per experiment
+    # folder_path = '..grades/direct'
+    # allowed_files = ['deepseek_grades_direct_0shot_exp1.json', 'deepseek_grades_direct_2shot_exp2.json', 
+    #                  'deepseek_grades_direct_4shot_exp3.json', 'deepseek_grades_direct_6shot_exp4.json']
+    # correctness_avg = []
+    # prompting_label = []
+    # for filename in os.listdir(folder_path):
+    #     if filename in allowed_files:
+    #         filepath = os.path.join(folder_path, filename)
+    #         with open(filepath, 'r') as jsonfile:
+    #             for line in jsonfile:
+    #                 if 
+
 main()
