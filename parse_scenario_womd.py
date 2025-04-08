@@ -156,5 +156,5 @@ def obtain_and_write_data(start, end):
         with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
             json.dump(final_preprocessed_data, file, indent=4)
 
-obtain_and_write_data(52,53)
+obtain_and_write_data(13,14)
 
