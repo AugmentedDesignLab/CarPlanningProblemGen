@@ -116,13 +116,16 @@ def transform_datapoint_to_qa_list(wmo_reasoning_datapoint):
 
 
 # Find scenarios similar to the given scenario
-def find_similar_data(start, end, search_range_start, search_range_end):
+def find_similar_data(scenario_index, search_range_start, search_range_end):
     # Ensure that only one scenario is used as the reference for comparison.
-    if end-start>1: return
 
     highest_similarity_score = 0
+    second_highest_similarity_score = 0
+
     highest_similarity_index = 0
-    for filename in scenario_files[start:end]:
+    second_highest_similarity_index = 0
+
+    for filename in scenario_files[scenario_index: scenario_index+1]:
         datapoint_reference = generate_womd_reasoning_datapoint(filename=filename)
         combined_qa_list_reference = transform_datapoint_to_qa_list(datapoint_reference)
         
@@ -143,6 +146,7 @@ def find_similar_data(start, end, search_range_start, search_range_end):
         scenario_similarity_score_search_candidate = 0
         
         for i in range(len(scenario_files[search_range_start: search_range_end])):
+            if i==scenario_index: continue
             datapoint_search_candidate = generate_womd_reasoning_datapoint(filename=scenario_files[search_range_start+i])
             number_of_surrounding_search_candidate = len(datapoint_search_candidate["rel_qa_id"])
 
@@ -153,25 +157,41 @@ def find_similar_data(start, end, search_range_start, search_range_end):
 
             # Turn the search candidate into one string where we can search for similarities.
             combined_qa_search_candidate = ""
-            combined_qa_search_candidate.join(combined_qa_list)
+            combined_qa_search_candidate = combined_qa_search_candidate.join(combined_qa_list)
 
             # Using the regex library to search for matching patterns.
             # Iterate through each question and answer in the reference and add a point each time there is a string match in the candidate.  
             for search_term in combined_qa_list_reference:
-                if re.search(search_term, combined_qa_search_candidate) is not None: scenario_similarity_score_search_candidate += 1
+                matches = re.search(search_term, combined_qa_search_candidate)
+                
+                if (matches is not None): 
+                    scenario_similarity_score_search_candidate += 1
 
             # Modifying the highest score value
             if scenario_similarity_score_search_candidate > highest_similarity_score: 
+                second_highest_similarity_score = highest_similarity_score
+                second_highest_similarity_index = highest_similarity_index
+
                 highest_similarity_score = scenario_similarity_score_search_candidate
-                highest_similarity_index = search_range_start + i
+                highest_similarity_index = search_range_start+i
             
             scenario_similarity_score_collection.setdefault("Index_number_"+str(search_range_start+i), [datapoint_search_candidate["sid"], str(scenario_similarity_score_search_candidate)])
+            scenario_similarity_score_search_candidate = 0
 
-    with open("scenario_similarity_ref_"+str(start)+"_"+str(end)+"_search_"+str(search_range_start)+"_"+str(search_range_end)+".json", 'w') as file:
+    with open("scenario_similarity_ref_"+str(scenario_index)+"_search_"+str(search_range_start)+"_"+str(search_range_end)+".json", 'w') as file:
         json.dump(scenario_similarity_score_collection, file, indent=4)
     
     print("\n The highest similarity index is {}".format(highest_similarity_index))
     print("\n The highest similarity score for this index is {}".format(highest_similarity_score))
+
+    print("\n The second highest similarity index is {}".format(second_highest_similarity_index))
+    print("\n The second highest similarity score for this index is {}".format(second_highest_similarity_score))
+
+    obtain_and_write_data_single_scenario(highest_similarity_index)
+    print("\n This index has been parsed and is in the parsed/... folder")
+
+    obtain_and_write_data_single_scenario(second_highest_similarity_index)
+    print("\n This index has also been parsed and is in the parsed/... folder")
 
     return scenario_similarity_score_collection
 
@@ -228,3 +248,14 @@ def obtain_and_write_data(start, end):
 
         with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
             json.dump(final_preprocessed_data, file, indent=4)
+
+# In case you're working with one scenario index at a time.
+def obtain_and_write_data_single_scenario(scenario_index):
+    obtain_and_write_data(scenario_index, scenario_index+1)
+
+# Comment out lines as necessary
+
+find_similar_data(254, 0, 5000) # This includes the obtain function below btw
+# obtain_and_write_data_single_scenario(414)
+
+
