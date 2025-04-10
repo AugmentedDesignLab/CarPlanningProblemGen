@@ -92,9 +92,9 @@ def obtain_and_write_mcq_data(start, end):
         # average_word_count_sentence = total_word_count_sentence / len(context_sentence_list)
         #print(average_word_count_sentence)
         #print(context_word_count)
-        if preprocessed_data['Size'] > 10000:
+        if preprocessed_data['Size'] > 9999:
             preprocessed_data['Scenario Category'] = "C"
-        elif 6000 <= preprocessed_data['Size'] < 9999:
+        elif 6000 <= preprocessed_data['Size'] <= 9999:
             preprocessed_data['Scenario Category'] = "B"
         elif preprocessed_data['Size'] < 6000:
             preprocessed_data['Scenario Category'] = "A"
