@@ -4,6 +4,9 @@ parsed_womdr_data/*
 pddl-examples/*
 *.pddl
 __pycache__/*
-grades/
+v3-grades/*
+plt-graph-v3/*
+cot_file_size_graphs/*
+abc_bar_graph/*
 grades/*
 plt-graph/*

@@ -175,6 +175,17 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
         return direct_cot_prompt_6shot
 
 ################# ============= Grading via LLM as a judge prompts ================== ###############
+# Grade this answer on the following aspect:
+# The correctness of the AI answer with respect to the ground truth answer. Give it a score between 1 to 10.
+# Explain why this score was given by you in detail.
+#Format the answer in a python dictionary format like this.
+# <open curly bracket>:
+# "Correctness score": "<Only enter the score number here>",
+# "Correctness explanation": "<Write your explanation here>"
+# <close curly bracket>
+        
+# Don't write anything else. Nothing else, nothing else, nothing else. 
+# Please only write it in the format requested.
 def prepare_grading_prompt(context, question, answer, model_output):
     grading_prompt = f"""
         Here is some context about the test scenario:
@@ -189,19 +200,39 @@ def prepare_grading_prompt(context, question, answer, model_output):
         This was the attempt by an AI for this question
         {model_output}
 
-        Grade this answer on the following aspects:
-        1. The correctness of the AI answer with respect to the ground truth answer. Give it a score between 1 to 10.
-        Explain why this score was given by you in detail.
+        Analyze this attempt and do the following:
+        Provide a concise explanation comparing the AI answer to the ground truth answer. Frame your responses ONLY using the words in quotation marks, with no other details:
+        1) If the AI answer is "correct" or "incorrect" with respect to the ground truth answer.
+        2) If the AI "is accurately interpreting" or "is NOT accurately interpreting" scenario information that would lead to the ground truth answer.
+        3) If the AI answer "is factually consistent" or "is NOT factually consistent" with respect to the ground truth answer.
+        4) If the AI answer "is including unnecessary information" or "is NOT including unnecessary information" with respect to the ground truth answer.
+        Based on these observations, give it a score between 1 and 10.
 
         Format the answer in a python dictionary format like this.
         <open curly bracket>:
-        "Correctness score": "<Only enter the score number here>",
-        "Correctness explanation": "<Write your explanation here>"
+        "Correctness explanation": "<Write your analysis here>",
+        "Correctness score": "<Only enter the score number here>"
         <close curly bracket>
-        
-        Don't write anything else. Nothing else, nothing else, nothing else. 
-        Please only write it in the format requested.
+
         """
+    
+# Analyze this attempt and do the following:
+#         Provide a concise explanation comparing the AI answer to the ground truth answer. To be concise, answer ONLY the following:
+#         1) If the AI answer is "correct" or "incorrect" with respect to the ground truth answer.
+#         2) If the AI "is accurately interpretting" or "is NOT accurately interpretting" scenario information that would lead to the ground truth answer.
+#         3) If the AI answer "is factually consistent" or "is NOT factually consistent" with respect to the ground truth answer.
+#         4) If the AI answer "is including unnecessary information" or "is NOT including unnecessary information" with respect to the ground truth answer.
+#         5) Include in a few words what other shortcomings the AI faces in both reasoning and answering.
+#         Based on these observations, give it a score between 1 and 10.
+
+#         Format the answer in a python dictionary format like this.
+#         <open curly bracket>:
+#         "Correctness explanation": "<Write your analysis here>",
+# 	  “Correctness”: <Write your answer to point 1 above with just the words “correct” or “incorrect”>,
+
+#         "Correctness score": "<Only enter the score number here>"
+#         <close curly bracket>
+
     return grading_prompt
 
 ############### =============== Evaluating Interactions ================ ##############
@@ -231,7 +262,6 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                     model_family+"_"+model_name+"_modelname", grading_output
                     )
                 correctness = int(grading_output["Correctness score"])
-
                 #existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Average", (str(correctness)))
 
                 existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
