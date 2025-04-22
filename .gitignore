@@ -6,3 +6,4 @@ pddl-examples/*
 __pycache__/*
 grades/
 grades/*
+plt-graph/*
