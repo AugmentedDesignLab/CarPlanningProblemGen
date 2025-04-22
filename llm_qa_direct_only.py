@@ -5,14 +5,22 @@ import os
 import json
 import matplotlib.pyplot as plt 
 from openai import OpenAI
-import planner
+from parsed_data_retrieval import retrieve_parsed_data
+import argparse
+
 
 ########### ============  Global initializations ====================== ##########
 parsed_file_list = os.listdir("parsed_womdr_data/")
 client_oai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 #client_deepseek = OpenAI(api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com")
 client_deepinfra = OpenAI(api_key=os.environ["DEEPINFRA_API_KEY"], base_url="https://api.deepinfra.com/v1/openai")
-scenario_domain_and_problem_data = planner.retrieve_womdr_domain_problem_data()
+scenario_domain_and_problem_data = retrieve_parsed_data()
+
+parser = argparse.ArgumentParser(prog="Cruzway Reasoner 2.0",
+                        description="Evaluate LLMs for autonomous vehicle test scenario reasoning")
+parser.add_argument("-ns", "--nshot", type=str)
+parser.add_argument("-sindex", "--scenario_index", type=int)
+
 
 # The following are model names for DeepInfra provided models
 # "deepseek-ai/DeepSeek-V3"
@@ -32,7 +40,7 @@ scenario_domain_and_problem_data = planner.retrieve_womdr_domain_problem_data()
 
 model_dictionary = {
     "openai_models": {
-        "o3-mini": []
+        "gpt-4.1-mini": []
         },
     "deepinfra_models": {
     } 
@@ -41,7 +49,7 @@ model_dictionary = {
 # Reuse code in terms of classes and functions and 
 
 model_outputs = {}
-existing_grades = {}
+existing_grades = {} #This dictionary goes into the grades file.
 scenario_qa_score = {}
 
 ######## =================  LLM API calls ====================== ###########
@@ -61,13 +69,6 @@ def deepinfra_call(model_name, prompt):
     output_content = output.choices[0].message.content
     return output_content
 
-# def deepseek_call(model_name, prompt):
-#     output = client_deepseek.chat.completions.create(model=model_name, 
-#                                        messages=[{"role": "user", "content": prompt}],
-#                                        stream=False
-#                                     )
-#     output_content = output.choices[0].message.content
-#     return output_content
 ################# ============== QA prompts =====================
 def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
     direct_prompt = f"""
@@ -80,7 +81,7 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
         Think step by step. Show your reasoning and answer the question. 
         
         """
-    #scenario ID 10471914b8bb79a1 using interactions 0 and 7
+    #Reference for this prompt is scenario ID 10471914b8bb79a1 using interactions 0 and 7
     direct_cot_prompt_2shot = f"""
         I want you to answer some questions from the world of autonomous vehicle testing. 
 
@@ -244,12 +245,17 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
 
                 existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
                 model_dictionary[model_family][model_name].append(correctness)
+    
 
-
-def pddl_response_and_answer_questions(prompt_type="4shot"):
+def pddl_response_and_answer_questions(prompt_type="4shot", arguments=None):
     # Parse through the preprocessed json data contained in parsed_womdr_data/
     for scenario_id in scenario_domain_and_problem_data.keys():
+        existing_grades = {}
         existing_grades.setdefault(scenario_id, {})
+        current_scenario_index = scenario_domain_and_problem_data[scenario_id]["Scenario Index"]
+        if (arguments.scenario_index!=None) and (current_scenario_index!=arguments.scenario_index):
+            continue
+        existing_grades[scenario_id].setdefault("Scenario Index", current_scenario_index)
         for interaction_id in scenario_domain_and_problem_data[scenario_id]["Interactions"].keys():
             existing_grades[scenario_id].setdefault(interaction_id, {})
               
@@ -261,16 +267,21 @@ def pddl_response_and_answer_questions(prompt_type="4shot"):
                                                         prompt_type=prompt_type)
             
             #Ensure that this json file by the name grades/deepseek_grades.json exists first.
-    with open("grades/direct/deepseek_grades_direct_"+prompt_type+"_"+scenario_id+".json", 'w') as grade_file:
-        print("Existing grades is given by {}".format(existing_grades))
-        json.dump(existing_grades, grade_file, indent=4)
-        grade_file.close()
+        with open("grades/grades_"+"scenario_index_"+str(current_scenario_index)+"_prompt_type_"+prompt_type+"_"+scenario_id+".json", 'w') as grade_file:
+            print("Existing grades is given by {}".format(existing_grades))
+            json.dump(existing_grades, grade_file, indent=4)
+            grade_file.close()
 
 def main():
-
     # Change parameter here depending on the prompt.
-    prompt_type = "6shot" 
-    pddl_response_and_answer_questions(prompt_type=prompt_type)
+    arguments = parser.parse_args()
+    print(f"The argument is {arguments.nshot}")
+    if arguments.nshot=="4shot" or arguments.nshot=="0shot" or arguments.nshot=="2shot" or arguments.nshot=="6shot":
+        prompt_type = arguments.nshot
+    else: prompt_type = "2shot"
+    print(f"Prompt type is {prompt_type}") 
+    print(f"The scenario index argument is {arguments.scenario_index}")
+    pddl_response_and_answer_questions(prompt_type=prompt_type, arguments=arguments)
     for model_provider in model_dictionary.keys():
         for model in model_dictionary[model_provider].keys():
             plt.bar([i for i in range(len(model_dictionary[model_provider][model]))], model_dictionary[model_provider][model])
@@ -278,5 +289,4 @@ def main():
             plt.xlabel("Interactions")
             plt.ylabel("Correctness Scores")
             plt.show()
-
 main()
