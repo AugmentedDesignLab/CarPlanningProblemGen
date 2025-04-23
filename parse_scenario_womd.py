@@ -14,7 +14,7 @@ scenario_files = os.listdir("../training/")
 scenario_blocklist = []
 
 def generate_womd_reasoning_datapoint(filename):
-    with open('../car_beh_gen/datasets/training.tar/training_2/training/'+filename, 'r') as file:
+    with open('../training/'+filename, 'r') as file:
         data = json.loads(file.read())
         new_data_no_interactions = {
             'environment questions': data['env_q'],
@@ -75,7 +75,7 @@ def obtain_and_write_data_smallest(start, end):
     filesize = 100000
     smallest_filename = ""
     for filename in scenario_files[start:end]:
-        file_size = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)
+        file_size = os.path.getsize('../training/'+filename)
         if file_size < filesize: 
             filesize = file_size
             smallest_filename = filename
@@ -357,22 +357,23 @@ def obtain_and_write_data_single_scenario(scenario_index):
 
 # find_similar_data(254, 400, 1000) # This includes the obtain function below btw
 
-# From the initial 60 experiments:
+#From the initial 60 experiments:
 
-scenario_index_list_small = [239, 562, 999, 2827, 475]
-scenario_index_list_medium = [6, 254, 622, 136, 182]
-scenario_index_list_large = [52, 13, 41, 102, 600]
+# scenario_index_list_small = [239, 562, 999, 2827, 475]
+# scenario_index_list_medium = [6, 254, 622, 136, 182]
+# scenario_index_list_large = [52, 13, 41, 102, 600]
 
-scenario_indices_all = scenario_index_list_small+scenario_index_list_medium+scenario_index_list_large
+# scenario_indices_all = scenario_index_list_small+scenario_index_list_medium+scenario_index_list_large
 
+scenarios = [52]
 
-for scenario_index in scenario_index_list_small:
+for scenario_index in scenarios:
     obtain_and_write_data_single_scenario(scenario_index)
 
 
-# find_similar_data_emb_based(search_range_start=1000, 
-#                             search_range_end=1200,
+# find_similar_data_emb_based(search_range_start=250, 
+#                             search_range_end=280,
 #                             consider_scenario_context=True,
 #                             consider_scenario_interactions=False,
 #                             embedding_model_type="small",
-#                             number_of_clusters=5)
+#                             number_of_clusters=3)

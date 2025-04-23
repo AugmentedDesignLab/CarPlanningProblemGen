@@ -61,10 +61,17 @@ scenario_qa_score = {}
 
 ######## =================  LLM API calls ====================== ###########
 def openai_call(model_name, prompt):
-    output = client_oai.chat.completions.create(model=model_name, 
-                                       messages=[{"role": "user", "content": prompt}],
-                                       stream=False
-                                    )
+    if(model_name=="o4-mini"):
+        output = client_oai.chat.completions.create(model=model_name, 
+                                        messages=[{"role": "user", "content": prompt}],
+                                        stream=False,
+                                        reasoning_effort="high"
+                                        )
+    else:
+        output = client_oai.chat.completions.create(model=model_name, 
+                                        messages=[{"role": "user", "content": prompt}],
+                                        stream=False
+                                        ) 
     output_content = output.choices[0].message.content
     return output_content
 
@@ -102,24 +109,19 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
         Question: "What is the ego agent's plan in the immediate future?"
         Answer: "The ego agent intends to complete its left turn and exit the intersection. It will proceed with the turn as the traffic light is green and it has the right of way. Surrounding agents #1 and #2 will yield to the ego agent, and surrounding agent #6 will likely stop at the crosswalk, so the ego agent does not need to alter its course in response to these agents."
 
-        When analyzing and responding to driving scenarios, please do not, at any cost, conclude your reasoning with statements 1 through 11:
-        1) Misinterpret or incorrectly assess the key scenario dynamics, agent positions, motion statuses, relative movements, spatial relationships, or right-of-way. Because of the aforementioned, do not incorrectly assume no interaction.
-        2) Make unnecessary or speculative assumptions regarding potential interactions, collisions, evasive maneuvers, or conflicts not supported by the explicit context or ground truth. Prioritize explicit details in the context and ground truth.
-        3) Elaborate on hypothetical, potential, or unwarranted interactions, trajectory adjustments, yielding, or collision avoidance unless directly stated in the scenario or ground truth. Prioritize explicit details in the context and ground truth.
-        4) Overcomplicate the reasoning, introduce extraneous details, or speculate about future events, monitoring requirements, or passive observation that are not specified or relevant to the scenario. Prioritize explicit details in the context and ground truth.
-        5) Provide overly detailed, verbose, redundant, or partially off-topic explanations; keep answers concise and focused on the central point. Prioritize key takeaways.
-        6) Add information, nuanced explanations, or background reasoning beyond what is present in and supported by the ground truth. Prioritize explicit details in the ground truth.
-        7) Fail to identify, mention, or precisely describe critical details explicitly present in the ground truth (e.g., yielding, overtaking, leading/following dynamics, acceleration, established right-of-way, explicit actions). Prioritize explicit details in the ground truth.
-        8) Underestimate or overemphasize the importance of specific interactions compared to what is stated in the ground truth. Prioritize explicit details in the context and ground truth.
-        9) Deviate from the ground truth by introducing unsupported, irrelevant, or misleading information, or by omitting key details prescribed in the scenario or answer. Prioritize explicit details in the context and ground truth.
-        10) Present logical but incomplete, imprecise, or misaligned conclusions (with respect to the ground truth). Prioritize explicit details in the context and ground truth.
-        11) Discuss possible but nonexistent proximity risks, interaction points, or minimal interactions not warranted by the scenario. Prioritize explicit details in the context and ground truth.
-        Please do not make the mistakes listed above when analyzing and responding to driving scenarios.
-        
-        Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
-        Here is the context: {context}
-
-        Here is the question: {question}
+        When analyzing driving scenarios, please follow points 1 through 11 written below:
+        1) Don't misinterpret or incorrectly assess the key scenario dynamics, agent positions, motion statuses, relative movements, spatial relationships, or right-of-way. Because of the aforementioned, do not incorrectly assume no interaction.
+        2) Don't make unnecessary or speculative assumptions regarding potential interactions, collisions, evasive maneuvers, or conflicts not supported by the explicit context or ground truth. Prioritize explicit details in the context and ground truth.
+        3) Don't elaborate on hypothetical, potential, or unwarranted interactions, trajectory adjustments, yielding, or collision avoidance unless directly stated in the scenario or ground truth. Prioritize explicit details in the context and ground truth.
+        4) Don't overcomplicate the reasoning, introduce extraneous details, or speculate about future events, monitoring requirements, or passive observation that are not specified or relevant to the scenario. Prioritize explicit details in the context and ground truth.
+        5) Don't provide overly detailed, verbose, redundant, or partially off-topic explanations; keep answers concise and focused on the central point. Prioritize key takeaways.
+        6) Don't add information, nuanced explanations, or background reasoning beyond what is present in and supported by the ground truth. Prioritize explicit details in the ground truth.
+        7) Don't fail to identify, mention, or precisely describe critical details explicitly present in the ground truth (e.g., yielding, overtaking, leading/following dynamics, acceleration, established right-of-way, explicit actions). Prioritize explicit details in the ground truth.
+        8) Don't underestimate or overemphasize the importance of specific interactions compared to what is stated in the ground truth. Prioritize explicit details in the context and ground truth.
+        9) Don't deviate from the ground truth by introducing unsupported, irrelevant, or misleading information, or by omitting key details prescribed in the scenario or answer. Prioritize explicit details in the context and ground truth.
+        10) Don't present logical but incomplete, imprecise, or misaligned conclusions (with respect to the ground truth). Prioritize explicit details in the context and ground truth.
+        11) Don't discuss possible but nonexistent proximity risks, interaction points, or minimal interactions not warranted by the scenario. Prioritize explicit details in the context and ground truth.
+        Please follow points 1 through 11 listed above when analyzing and responding to driving scenarios. 
 
         """
     
@@ -145,23 +147,16 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
         Question:  "What kind of interaction will take place between the ego agent and surrounding agent #8?"
         Answer: "Surrounding agent #8 will have no interaction with the ego agent as it is not moving and is on the same side of the intersection as the ego agent."
 
-        scienceqa lecturing...explain what an interaction is
-
-        When analyzing and responding to driving scenarios, please do not, at any cost, conclude your reasoning with points 1 through 8:
-        1) Speculate about potential or hypothetical interactions, maneuvers, conflicts, or yielding behavior that are not supported by the provided context or ground truth. Please prioritize explicit details in the context and ground truth.
-        2) Overcomplicate the analysis with unnecessary details, verbose explanations, or elaborate on irrelevant possible actions or future trajectories not mentioned in the scenario. Please prioritize explicit details in the context.
-        3) Misinterpret or incorrectly assess the key scenario dynamics, agent positions, motion statuses, relative movements, spatial relationships, or right-of-way. Because of the aforementioned, never assume no interaction.
-        4) Introduce unwarranted scenarios (e.g., unnecessary speed or trajectory adjustments, collision risks, overtaking, or yielding) that detract from the actual dynamics and facts described. Please prioritize explicit details in the context.
-        5) Omit or fail to align explanations with critical details or key points from the ground truth, especially regarding the presence or absence of interactions and required behaviors. Please prioritize explicit details in the context and ground truth.
-        6) Offer conclusions or reasoning that contradict the context, such as stating there is (or is not) an interaction when the ground truth indicates the opposite, or introduce unsupported assumptions about right-of-way, vehicle intent, or agent relationships. Please prioritize explicit details in the ground truth.
-        7) Add irrelevant commentary or speculative concerns that dilute the core answer. Please prioritize explicit details in the context and ground truth.
-        8) Focus your answer on concise, accurate, and context-supported analysis aligned with the scenario's ground truth. Do not expand with hypothetical, unnecessary, or unsupported information. Please prioritize explicit details in the context and ground truth.
-        Please do not make the mistakes listed above when analyzing and responding to driving scenarios. 
-
-        Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
-        Here is the context: {context}
-
-        Here is the question: {question}
+        When analyzing driving scenarios, please follow points 1 through 8 written below:
+        1) Don't speculate about potential or hypothetical interactions, maneuvers, conflicts, or yielding behavior that are not supported by the provided context or ground truth. Please prioritize explicit details in the context and ground truth.
+        2) Don't overcomplicate the analysis with unnecessary details, verbose explanations, or elaborate on irrelevant possible actions or future trajectories not mentioned in the scenario. Please prioritize explicit details in the context.
+        3) Don't misinterpret or incorrectly assess the key scenario dynamics, agent positions, motion statuses, relative movements, spatial relationships, or right-of-way. Because of the aforementioned, never assume no interaction.
+        4) Don't introduce unwarranted scenarios (e.g., unnecessary speed or trajectory adjustments, collision risks, overtaking, or yielding) that detract from the actual dynamics and facts described. Please prioritize explicit details in the context.
+        5) Don't omit or fail to align explanations with critical details or key points from the ground truth, especially regarding the presence or absence of interactions and required behaviors. Please prioritize explicit details in the context and ground truth.
+        6) Don't offer conclusions or reasoning that contradict the context, such as stating there is (or is not) an interaction when the ground truth indicates the opposite, or introduce unsupported assumptions about right-of-way, vehicle intent, or agent relationships. Please prioritize explicit details in the ground truth.
+        7) Don't add irrelevant commentary or speculative concerns that dilute the core answer. Please prioritize explicit details in the context and ground truth.
+        8) Don't focus your answer on concise, accurate, and context-supported analysis aligned with the scenario's ground truth. Do not expand with hypothetical, unnecessary, or unsupported information. Please prioritize explicit details in the context and ground truth.
+        Please follow points 1 through 8 listed above when analyzing and responding to driving scenarios. 
 
         """
 
@@ -196,24 +191,19 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
         Question: "What is the ego agent's plan in the immediate future?"
         Answer: "The ego agent intends to complete its left turn and exit the intersection. It will proceed with the turn as the traffic light is green and it has the right of way. Surrounding agents #1 and #2 will yield to the ego agent, and surrounding agent #6 will likely stop at the crosswalk, so the ego agent does not need to alter its course in response to these agents."
 
-        When analyzing driving scenarios, please do not, at any cost, conclude your reasoning with points 1 through 11:
-        1) Speculate about potential or hypothetical interactions unless clearly indicated in the scenario. Please prioritize explicit details in the context.
-        2) Provide overly detailed analyses or introduce unnecessary complexity not present in the ground truth. Please prioritize explicit details in the ground truth.
-        3) Assume or infer yielding behavior, collisions, or path conflicts unless explicitly described. Please prioritize explicit details in the context and ground truth.
-        4) Include information about right of way, speed bumps, or surrounding agents unless it is directly supported by the scenario and ground truth. Please prioritize explicit details in the context and ground truth.
-        5) Misinterpret the relative positions, motion statuses, or the spatial/directional dynamics of the agents. Because of the aforementioned, never assume no interaction. Do not ignore differences in relative speed and position between agents. Do not state "no interaction" just because there is no immediate collision or lane change. Do not overlook that a decelerating ego agent falling behind a constant-speed leader is still an interaction. Do not disregard lead-follow dynamics as unimportant to agent interactions. Do not provide shallow or incomplete analysis of agent relationships.
-        6) Overanalyze or focus on possible but unsupported outcomes or secondary details. Please prioritize explicit details in the context and ground truth.
-        7) Omit key points stated in the ground truth, such as explicit yielding, leading/following dynamics, or the order of actions. Please analyze the potential of the aforementioned, specifically how decelerating and constant speed combined cause no interaction.
-        8) Use vague conclusions like "minimal" or "negligible" interaction instead of directly stating "no interaction" where appropriate. Please prioritize explicit details in your reasoning.
-        9) Address passive observation, secondary potential scenarios, or future interactions unless specified by the scenario. Please prioritize explicit details in the context.
-        10) Ignore or fail to directly address the main interaction or key behavioral details described in the ground truth. Please prioritize explicit details in your reasoning.
-        11) Keep responses concise, directly address the core scenario as described, and strictly adhere to the information provided in the ground truth. Please prioritize explicit details in the ground truth.
-        Please do not make the mistakes listed above when analyzing and responding to driving scenarios. 
-
-        Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
-        Here is the context: {context}
-
-        Here is the question: {question}
+        When analyzing driving scenarios, please follow points 1 through 11 written below:
+        1) Don't speculate about potential or hypothetical interactions unless clearly indicated in the scenario. Please prioritize explicit details in the context.
+        2) Don't provide overly detailed analyses or introduce unnecessary complexity not present in the ground truth. Please prioritize explicit details in the ground truth.
+        3) Don't assume or infer yielding behavior, collisions, or path conflicts unless explicitly described. Please prioritize explicit details in the context and ground truth.
+        4) Don't include information about right of way, speed bumps, or surrounding agents unless it is directly supported by the scenario and ground truth. Please prioritize explicit details in the context and ground truth.
+        5) Don't misinterpret the relative positions, motion statuses, or the spatial/directional dynamics of the agents. Because of the aforementioned, never assume no interaction. Do not ignore differences in relative speed and position between agents. Do not state "no interaction" just because there is no immediate collision or lane change. Do not overlook that a decelerating ego agent falling behind a constant-speed leader is still an interaction. Do not disregard lead-follow dynamics as unimportant to agent interactions. Do not provide shallow or incomplete analysis of agent relationships.
+        6) Don't overanalyze or focus on possible but unsupported outcomes or secondary details. Please prioritize explicit details in the context and ground truth.
+        7) Don't omit key points stated in the ground truth, such as explicit yielding, leading/following dynamics, or the order of actions. Please analyze the potential of the aforementioned, specifically how decelerating and constant speed combined cause no interaction.
+        8) Don't use vague conclusions like "minimal" or "negligible" interaction instead of directly stating "no interaction" where appropriate. Please prioritize explicit details in your reasoning.
+        9) Don't address passive observation, secondary potential scenarios, or future interactions unless specified by the scenario. Please prioritize explicit details in the context.
+        10) Don't ignore or fail to directly address the main interaction or key behavioral details described in the ground truth. Please prioritize explicit details in your reasoning.
+        11) Don't keep responses concise, directly address the core scenario as described, and strictly adhere to the information provided in the ground truth. Please prioritize explicit details in the ground truth.
+        Please follow points 1 through 11 listed above when analyzing and responding to driving scenarios. 
 
         """
 
@@ -271,14 +261,39 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
     context_word_count = scenario_domain_and_problem_data[scenario_id]["Word Count"]
 
     generated_prompt = generate_qa_prompt(context, question, answer, prompt_type)
+    print(generated_prompt)
+    instructions_to_refine = f"""
+    I have an autonomous vehicle scenario, some context information and instructions on what kind of reasoning to not do:
+    {generated_prompt}
+
+    Please rewrite the context and please rewrite the examples. In the examples, please include the reasoning while closely following the guidelines mentioned previously. Please follow the guidelines constructively. Please provide detailed fine-grained reasoning. Please ensure in each example that the reasoning is written before the answer.  
+
+    """
+    final_question = f"""
+
+    Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
+    Here is the context: {context}
+
+    Here is the question: {question}
+
+    """
     #### Step 2: Generate the model grades and add them to the dictionary
     
     for model_family in model_dictionary.keys():
         if model_family=="openai_models":
             for model_name in model_dictionary[model_family]:
-                predicted_answer = openai_call(model_name=model_name, prompt=generated_prompt)
+                refined_cot_prompt = openai_call(model_name="o4-mini", prompt=instructions_to_refine)
+                final_question = f"""
+                {refined_cot_prompt}
+                Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
+                Here is the context: {context}
+
+                Here is the question: {question}
+                """
+                print("The refined CoT prompt is: ")
+                print(refined_cot_prompt)
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=openai_call(model_name=model_name, prompt=generated_prompt))
+                                       answer=answer, model_output=openai_call(model_name=model_name, prompt=final_question))
                 grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_modelname", grading_output
@@ -290,9 +305,18 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 model_dictionary[model_family][model_name].append(correctness)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
-                predicted_answer = deepinfra_call(model_name=model_name, prompt=generated_prompt)
+                refined_cot_prompt = deepinfra_call(model_name=model_name, prompt=instructions_to_refine)
+                final_question = f"""
+                {refined_cot_prompt}
+                Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
+                Here is the context: {context}
+
+                Here is the question: {question}
+                """
+                print("The refined CoT prompt is: ")
+                print(refined_cot_prompt)
                 grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=generated_prompt))
+                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=final_question))
                 grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
                 existing_grades[scenario_id][interaction_id].setdefault(
                     model_family+"_"+model_name+"_modelname", grading_output
