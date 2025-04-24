@@ -8,6 +8,7 @@ import planner
 from openai import OpenAI
 from parsed_data_retrieval import retrieve_parsed_data
 import argparse
+from tqdm import tqdm
 
 
 ########### ============  Global initializations ====================== ##########
@@ -21,6 +22,7 @@ parser = argparse.ArgumentParser(prog="Cruzway Reasoner 2.0",
                         description="Evaluate LLMs for autonomous vehicle test scenario reasoning")
 parser.add_argument("-ns", "--nshot", type=str)
 parser.add_argument("-sindex", "--scenario_index", type=int)
+parser.add_argument("-gt", "--ground_truth", default="True", type=str)
 
 
 # The following are model names for DeepInfra provided models
@@ -41,7 +43,7 @@ parser.add_argument("-sindex", "--scenario_index", type=int)
 
 model_dictionary = {
     "openai_models": {
-        "gpt-4.1-mini": []
+        "gpt-4o-mini": []
         },
     "deepinfra_models": {
     } 
@@ -50,7 +52,6 @@ model_dictionary = {
 # Reuse code in terms of classes and functions and 
 
 model_outputs = {}
-existing_grades = {} #This dictionary goes into the grades file.
 scenario_qa_score = {}
 
 ######## =================  LLM API calls ====================== ###########
@@ -209,122 +210,206 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
         return direct_cot_prompt_2shot
     elif prompt_type=="6shot":
         return direct_cot_prompt_6shot
-
-################# ============= Grading via LLM as a judge prompts ================== ###############
-def prepare_grading_prompt(context, question, answer, model_output):
-    grading_prompt = f"""
-        Here is some context about the test scenario:
-        {context}
-
-        This question was asked with regards to this context:
-        {question}
-
-        This is the ground truth answer:
-        {answer}
-
-        This was the attempt by an AI for this question
-        {model_output}
-
-        Grade this answer on the following aspect:
-        The correctness of the AI answer with respect to the ground truth answer. Give it a score between 1 to 10.
-        Explain why this score was given by you in detail.
-        Format the answer in a python dictionary format like this.
-        <open curly bracket>:
-        "Correctness score": "<Only enter the score number here>",
-        "Correctness explanation": "<Write your explanation here>"
-        <close curly bracket>
-        
-        Don't write anything else. Nothing else, nothing else, nothing else. 
-        Please only write it in the format requested.
-
-        """
-
-    return grading_prompt
-
-############### =============== Evaluating Interactions ================ ##############
-def grade_openai_deepinfra_models_one_interaction(model_dictionary, 
-                                                  existing_grades,
-                                                  scenario_id, 
-                                                  interaction_id,
-                                                  prompt_type):
     
-    #### Step 1: Generate the PDDL prompts ======================= #########
-    context = scenario_domain_and_problem_data[scenario_id]["Context"]
-    question = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["problem_data"]
-    answer = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["answer_data"]
-    context_word_count = scenario_domain_and_problem_data[scenario_id]["Word Count"]
-
-    generated_prompt = generate_qa_prompt(context, question, answer, prompt_type)
-    print(generated_prompt)
+################# ============== Prompt Refining Functions ===================== ##############
+def prepare_refined_prompt_with_final_question(context,
+                                               question,
+                                               refining_model="gpt-4.1", 
+                                               initial_prompt=""):
     instructions_to_refine = f"""
     I have an autonomous vehicle scenario, some context information and instructions on what kind of reasoning to not do:
-    {generated_prompt}
+    {initial_prompt}
 
-    Please rewrite the context and please rewrite the examples. In the examples, please include the reasoning while closely following the guidelines mentioned previously. Please follow the guidelines constructively. Please provide detailed fine-grained reasoning. Please ensure in each example that the reasoning is written before the answer.  
+    Please rewrite the context and please rewrite the examples according to the following instructions:
+    * In the examples, please include the reasoning while closely following the guidelines mentioned previously. 
+    * Please follow the guidelines constructively. 
+    * Please provide detailed fine-grained reasoning. 
+    * Please ensure in each example that the reasoning is written before the answer.
+    * Please ensure that the facts are consistent with the initial information.
+    * Think step by step.  
 
     """
+    refined_cot_prompt = openai_call(model_name=refining_model, prompt=instructions_to_refine)
+    
     final_question = f"""
-
+    {refined_cot_prompt}
     Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
     Here is the context: {context}
 
     Here is the question: {question}
 
     """
-    #### Step 2: Generate the model grades and add them to the dictionary
+    return final_question
+
+################# ============= Grading via LLM as a judge prompts ================== ###############
+def prepare_grading_prompt(context, question, answer, model_output, ground_truth_eval=False):
+    ai_attempt = f"""
+    This was the attempt by an AI for this question
+    {model_output}
+    """
+    
+    if ground_truth_eval==True:
+        grading_prompt = f"""
+            Here is some context about the test scenario:
+            {context}
+
+            This question was asked with regards to this context:
+            {question}
+
+            This is an answer:
+            {answer}
+            
+            Please grade the answer above in accordance with the following aspects:
+            * Write the correctness of the answer with respect to the ground truth answer. Give it a score between 1 to 10.
+            * Explain why this score was given by you in detail.
+            * Please only consider the context information mentioned above that is relevant to the question. Please explain why you believe it is relevant.
+            * Please think step by step.
+            * Please do not deduct points for specifics unless it is important to effectively answer the question. Please explain why you believe it is important.
+            * Please format the answer in a python dictionary format like this:
+            <open curly bracket>:
+            "Correctness score": "<Only enter the score number here>",
+            "Correctness explanation": "<Write your explanation here>",
+            "Updated Answer": <Write an updated answer that addresses your feedback>
+            <close curly bracket>
+            
+            Don't write anything else. Nothing else, nothing else, nothing else. 
+            Please only write it in the format requested.
+
+            """
+    else:
+        grading_prompt = f"""
+            Here is some context about the test scenario:
+            {context}
+
+            This question was asked with regards to this context:
+            {question}
+
+            This is the ground truth answer:
+            {answer}
+
+            {ai_attempt}
+            
+            Please grade the AI answer above in accordance with the following aspects:
+            * Write the correctness of the answer with respect to the ground truth answer. Give it a score between 1 to 10.
+            * Explain why this score was given by you in detail.
+            * Please only consider the context information mentioned above that is relevant to the question. Please explain why you believe it is relevant.
+            * Please think step by step.
+            * Please do not deduct points for specifics unless it is important to effectively answer the question. Please explain why you believe it is important.
+            * Please format the answer in a python dictionary format like this:
+            <open curly bracket>:
+            "Correctness score": "<Only enter the score number here>",
+            "Correctness explanation": "<Write your explanation here>"
+            <close curly bracket>
+            
+            Don't write anything else. Nothing else, nothing else, nothing else. 
+            Please only write it in the format requested.
+
+            """
+    return grading_prompt
+############### =============== Generate prompts, AI and LLM as a judge responses ============== #########
+def run_llm_evals(context, question, answer, 
+                  initial_prompt, 
+                  question_gen_model,
+                  eval_model_family,
+                  eval_model,
+                  scenario_id,
+                  interaction_id,
+                  context_word_count,
+                  existing_grades,
+                  ground_truth):
+    
+    # LLM as a judge grade generation
+    if ground_truth==True:
+        grading_prompt= prepare_grading_prompt(context=context, 
+                                               question=question, 
+                                               answer=answer, 
+                                               model_output="", 
+                                               ground_truth_eval=True)
+        grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
+        
+        # Preparation of the grades file.
+        existing_grades[scenario_id][interaction_id].setdefault(
+            "Ground Truth Grades", grading_output
+            )
+        correctness = int(grading_output["Correctness score"])
+
+        existing_grades[scenario_id][interaction_id]["Ground Truth Grades"].setdefault("Word Count", (str(context_word_count)))
+
+    else:
+        # Refining the CoT examples given in a prompt.
+        final_question = prepare_refined_prompt_with_final_question(context=context,
+                                                                    question=question,
+                                                                    refining_model=question_gen_model,
+                                                                    initial_prompt=initial_prompt)
+        
+        # LLM response to the refined prompt involving detailed CoT examples with a question and the corresponding context. 
+        ai_response = openai_call(model_name=eval_model, prompt=final_question)
+
+        grading_prompt = prepare_grading_prompt(context=context, 
+                                                question=question, 
+                                                answer=answer, 
+                                                model_output=ai_response)
+        grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
+        
+        existing_grades[scenario_id][interaction_id].setdefault(f"LLM {eval_model} Response", ai_response)
+
+        # Preparation of the grades file.
+        existing_grades[scenario_id][interaction_id].setdefault(
+            eval_model_family+"_"+eval_model+"_modelname", grading_output
+            )
+        correctness = int(grading_output["Correctness score"])
+
+        existing_grades[scenario_id][interaction_id][eval_model_family+"_"+eval_model+"_modelname"].setdefault("Word Count", (str(context_word_count)))
+
+    # Update the model-wise correctness outputs for creating bar charts at the end.
+    model_dictionary[eval_model_family][eval_model].append(correctness)
+
+############### =============== Evaluating Interactions ================ ##############
+def grade_openai_deepinfra_models_one_interaction(model_dictionary,
+                                                  scenario_id, 
+                                                  interaction_id,
+                                                  prompt_type,
+                                                  existing_grades,
+                                                  ground_truth):
+    
+    # Retrieving preprocessed data
+    context = scenario_domain_and_problem_data[scenario_id]["Context"]
+    question = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["problem_data"]
+    answer = scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["answer_data"]
+    context_word_count = scenario_domain_and_problem_data[scenario_id]["Word Count"]
+
+    # Initial prompt generation given QA data for one interaction.
+    generated_prompt = generate_qa_prompt(context, question, answer, prompt_type)
     
     for model_family in model_dictionary.keys():
         if model_family=="openai_models":
             for model_name in model_dictionary[model_family]:
-                refined_cot_prompt = openai_call(model_name="o4-mini", prompt=instructions_to_refine)
-                final_question = f"""
-                {refined_cot_prompt}
-                Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
-                Here is the context: {context}
-
-                Here is the question: {question}
-                """
-                print("The refined CoT prompt is: ")
-                print(refined_cot_prompt)
-                grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=openai_call(model_name=model_name, prompt=final_question))
-                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
-                existing_grades[scenario_id][interaction_id].setdefault(
-                    model_family+"_"+model_name+"_modelname", grading_output
-                    )
-                correctness = int(grading_output["Correctness score"])
-                #existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Average", (str(correctness)))
-
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
-                model_dictionary[model_family][model_name].append(correctness)
+                # Generate (1) refined prompts. (2) LLM responses. (3) LLM as a judge grades using the function below:
+                run_llm_evals(context=context, question=question, answer=answer,  initial_prompt=generated_prompt,
+                question_gen_model="gpt-4.1",
+                eval_model_family=model_family,
+                eval_model=model_name,
+                scenario_id=scenario_id,
+                interaction_id=interaction_id,
+                existing_grades=existing_grades,
+                context_word_count=context_word_count,
+                ground_truth=ground_truth)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
-                refined_cot_prompt = deepinfra_call(model_name=model_name, prompt=instructions_to_refine)
-                final_question = f"""
-                {refined_cot_prompt}
-                Given these examples now please have a look at the following new context and try to answer the following question pertaining to the new context:
-                Here is the context: {context}
+                run_llm_evals(context=context, question=question, answer=answer,
+                initial_prompt=generated_prompt,
+                question_gen_model="gpt-4.1",
+                eval_model_family=model_family,
+                eval_model=model_name,
+                scenario_id=scenario_id,
+                interaction_id=interaction_id,
+                existing_grades=existing_grades,
+                context_word_count=context_word_count,
+                ground_truth=ground_truth)
 
-                Here is the question: {question}
-                """
-                print("The refined CoT prompt is: ")
-                print(refined_cot_prompt)
-                grading_prompt = prepare_grading_prompt(context=context, question=question, 
-                                       answer=answer, model_output=deepinfra_call(model_name=model_name, prompt=final_question))
-                grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
-                existing_grades[scenario_id][interaction_id].setdefault(
-                    model_family+"_"+model_name+"_modelname", grading_output
-                    )
-                correctness = int(grading_output["Correctness score"])
-
-                #existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Correctness Score", (str(total_correctness_average)))
-
-                existing_grades[scenario_id][interaction_id][model_family+"_"+model_name+"_modelname"].setdefault("Word Count", (str(context_word_count)))
-                model_dictionary[model_family][model_name].append(correctness)
-    
-
-def pddl_response_and_answer_questions(prompt_type="4shot", arguments=None):
+def generate_and_evaluate_llm_response(prompt_type="4shot", arguments=None):
     # Parse through the preprocessed json data contained in parsed_womdr_data/
+    # Loop through all scenarios in the preprocessed data.
     for scenario_id in scenario_domain_and_problem_data.keys():
         existing_grades = {}
         existing_grades.setdefault(scenario_id, {})
@@ -332,24 +417,38 @@ def pddl_response_and_answer_questions(prompt_type="4shot", arguments=None):
         if (arguments.scenario_index!=None) and (current_scenario_index!=arguments.scenario_index):
             continue
         existing_grades[scenario_id].setdefault("Scenario Index", current_scenario_index)
+        
+        # Looping through all interactions in a given scenario.
         for interaction_id in scenario_domain_and_problem_data[scenario_id]["Interactions"].keys():
             existing_grades[scenario_id].setdefault(interaction_id, {})
-              
-            ##### ===================== Automatic model evaluation with LLM grades on outputs ============== #########
+            existing_grades[scenario_id][interaction_id].setdefault("Given Question", scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["problem_data"])
+
+            existing_grades[scenario_id][interaction_id].setdefault("Ground Truth Answer", scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["answer_data"])
+
+            if arguments.ground_truth=="True": bool_ground_truth = True
+            elif arguments.ground_truth=="False": bool_ground_truth = False
+            # LLM outputs and LLM as a judge grade generation for one interaction within one scenario.
             grade_openai_deepinfra_models_one_interaction(model_dictionary=model_dictionary, 
                                                         existing_grades=existing_grades, 
                                                         scenario_id=scenario_id, 
                                                         interaction_id=interaction_id,
-                                                        prompt_type=prompt_type)
+                                                        prompt_type=prompt_type,
+                                                        ground_truth=bool_ground_truth)
             
-            #Ensure that this json file by the name grades/deepseek_grades.json exists first.
-        with open("grades/grades_"+"scenario_index_"+str(current_scenario_index)+"_prompt_type_"+prompt_type+"_"+scenario_id+".json", 'w') as grade_file:
-            print("Existing grades is given by {}".format(existing_grades))
-            json.dump(existing_grades, grade_file, indent=4)
-            grade_file.close()
+        # Creating the grade files now.
+        # Ensure that this json file by the name grades/deepseek_grades.json exists first.
+        if bool_ground_truth==False:
+            with open("grades/grades_"+"scenario_index_"+str(current_scenario_index)+"_prompt_type_"+prompt_type+"_"+scenario_id+".json", 'w') as grade_file:
+                print("Existing grades is given by {}".format(existing_grades))
+                json.dump(existing_grades, grade_file, indent=4)
+                grade_file.close()
+        else:
+           with open("grades/grades_"+"scenario_index_"+str(current_scenario_index)+"_prompt_type_"+"ground_truth"+"_"+scenario_id+".json", 'w') as grade_file:
+                print("Existing grades is given by {}".format(existing_grades))
+                json.dump(existing_grades, grade_file, indent=4)
+                grade_file.close() 
 
-def main():
-    # Change parameter here depending on the prompt.
+def parse_arguments():
     arguments = parser.parse_args()
     print(f"The argument is {arguments.nshot}")
     if arguments.nshot=="4shot" or arguments.nshot=="0shot" or arguments.nshot=="2shot" or arguments.nshot=="6shot":
@@ -357,12 +456,20 @@ def main():
     else: prompt_type = "2shot"
     print(f"Prompt type is {prompt_type}") 
     print(f"The scenario index argument is {arguments.scenario_index}")
-    pddl_response_and_answer_questions(prompt_type=prompt_type, arguments=arguments)
+    return arguments, prompt_type
+
+def plot_correctness_scores(arguments):
     for model_provider in model_dictionary.keys():
         for model in model_dictionary[model_provider].keys():
             plt.bar([i for i in range(len(model_dictionary[model_provider][model]))], model_dictionary[model_provider][model])
-            plt.title("Correctness Scores for All Scenarios of Current Exp.")
+            plt.title(f"Correctness Scores for Scenario Index {arguments.scenario_index}")
             plt.xlabel("Interactions")
             plt.ylabel("Correctness Scores")
             plt.show()
+
+def main():
+    arguments, prompt_type = parse_arguments()
+    generate_and_evaluate_llm_response(prompt_type=prompt_type, arguments=arguments)
+    plot_correctness_scores(arguments=arguments)
+
 main()
