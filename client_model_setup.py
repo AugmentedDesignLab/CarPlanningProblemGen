@@ -34,6 +34,7 @@ class ProvidedLLM():
         self.gpt_4o_mini = "gpt-4o-mini"
         self.o3_mini = "o3-mini"
         self.gpt_45 = "gpt-4.5-preview"
+        self.gpt_41 = "gpt-4.1"
 
         self.model_dictionary = {
                                     "openai_models": [self.gpt_4o_mini, self.o3_mini],
