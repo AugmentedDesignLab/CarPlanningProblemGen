@@ -23,7 +23,8 @@ parser = argparse.ArgumentParser(prog="Cruzway Reasoner 2.0",
 parser.add_argument("-ns", "--nshot", type=str)
 parser.add_argument("-sindex", "--scenario_index", type=int)
 parser.add_argument("-gt", "--ground_truth", default="True", type=str)
-
+parser.add_argument("-basic", "--enable_basic_refined_prompt", default="False", type=str)
+parser.add_argument("-sqa", "--enable_lecturing_refined_prompt", default="False", type=str)
 
 # The following are model names for DeepInfra provided models
 # "deepseek-ai/DeepSeek-V3"
@@ -215,7 +216,8 @@ def generate_qa_prompt(context, question, answer, prompt_type="4shot"):
 def prepare_refined_prompt_with_final_question(context,
                                                question,
                                                refining_model="gpt-4.1", 
-                                               initial_prompt=""):
+                                               initial_prompt="",
+                                               enable_lecturing=False):
     instructions_to_refine = f"""
     I have an autonomous vehicle scenario, some context information and instructions on what kind of reasoning to not do:
     {initial_prompt}
@@ -229,7 +231,26 @@ def prepare_refined_prompt_with_final_question(context,
     * Think step by step.  
 
     """
-    refined_cot_prompt = openai_call(model_name=refining_model, prompt=instructions_to_refine)
+
+    instructions_to_refine_lecturing = f"""
+    I have an autonomous vehicle scenario, some context information and instructions on what kind of reasoning to not do:
+    {initial_prompt}
+
+    Please generate a lecture transcript which explains the concepts mentioned in the scenario information provided above. Most importantly, please make it absolutely clear what the notion of an interaction actually means in this specific context and situation. 
+
+    Then please rewrite the context and please rewrite the examples according to the following instructions:
+    * In the examples given previously, please include the reasoning while closely following the guidelines mentioned previously. 
+    * Please follow the guidelines constructively. 
+    * Please provide detailed fine-grained reasoning. 
+    * Please ensure in each example that the reasoning is written before the answer.
+    * Please ensure that the facts are consistent with the initial information.
+    * Think step by step.  
+
+    """
+    if enable_lecturing==False:
+        refined_cot_prompt = openai_call(model_name=refining_model, prompt=instructions_to_refine)
+    elif enable_lecturing==True:
+        refined_cot_prompt = openai_call(model_name=refining_model, prompt=instructions_to_refine_lecturing)
     
     final_question = f"""
     {refined_cot_prompt}
@@ -238,6 +259,7 @@ def prepare_refined_prompt_with_final_question(context,
 
     Here is the question: {question}
 
+    Please ensure that the answers are clear, explanatory, yet concise.
     """
     return final_question
 
@@ -316,7 +338,9 @@ def run_llm_evals(context, question, answer,
                   interaction_id,
                   context_word_count,
                   existing_grades,
-                  ground_truth):
+                  ground_truth,
+                  enable_basic_refined_prompt,
+                  enable_lecturing_refined_prompt):
     
     # LLM as a judge grade generation
     if ground_truth==True:
@@ -337,20 +361,31 @@ def run_llm_evals(context, question, answer,
 
     else:
         # Refining the CoT examples given in a prompt.
-        final_question = prepare_refined_prompt_with_final_question(context=context,
-                                                                    question=question,
-                                                                    refining_model=question_gen_model,
-                                                                    initial_prompt=initial_prompt)
+        if enable_basic_refined_prompt==True:
+            final_prompt = prepare_refined_prompt_with_final_question(context=context,
+                                                                        question=question,
+                                                                        refining_model=question_gen_model,
+                                                                        initial_prompt=initial_prompt,
+                                                                        enable_lecturing=False)
+        elif enable_lecturing_refined_prompt==True:
+            final_prompt = prepare_refined_prompt_with_final_question(context=context,
+                                                                        question=question,
+                                                                        refining_model=question_gen_model,
+                                                                        initial_prompt=initial_prompt,
+                                                                        enable_lecturing=True)
+        else: final_prompt=initial_prompt
         
-        # LLM response to the refined prompt involving detailed CoT examples with a question and the corresponding context. 
-        ai_response = openai_call(model_name=eval_model, prompt=final_question)
+        # LLM response involving specific prompting method along with a question and the corresponding context. 
+        ai_response = openai_call(model_name=eval_model, prompt=final_prompt)
 
+        # Send the LLM response to the LLM as a judge.
         grading_prompt = prepare_grading_prompt(context=context, 
                                                 question=question, 
                                                 answer=answer, 
                                                 model_output=ai_response)
         grading_output = eval(deepinfra_call(model_name="deepseek-ai/DeepSeek-V3", prompt=grading_prompt))
         
+        # Recording the grades generated by the LLM as a judge.
         existing_grades[scenario_id][interaction_id].setdefault(f"LLM {eval_model} Response", ai_response)
 
         # Preparation of the grades file.
@@ -370,7 +405,9 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                                                   interaction_id,
                                                   prompt_type,
                                                   existing_grades,
-                                                  ground_truth):
+                                                  ground_truth,
+                                                  enable_basic_refined_prompt,
+                                                  enable_lecturing_refined_prompt):
     
     # Retrieving preprocessed data
     context = scenario_domain_and_problem_data[scenario_id]["Context"]
@@ -393,7 +430,9 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 interaction_id=interaction_id,
                 existing_grades=existing_grades,
                 context_word_count=context_word_count,
-                ground_truth=ground_truth)
+                ground_truth=ground_truth,
+                enable_basic_refined_prompt=enable_basic_refined_prompt,
+                enable_lecturing_refined_prompt=enable_lecturing_refined_prompt)
         elif model_family=="deepinfra_models":
             for model_name in model_dictionary[model_family]:
                 run_llm_evals(context=context, question=question, answer=answer,
@@ -405,7 +444,9 @@ def grade_openai_deepinfra_models_one_interaction(model_dictionary,
                 interaction_id=interaction_id,
                 existing_grades=existing_grades,
                 context_word_count=context_word_count,
-                ground_truth=ground_truth)
+                ground_truth=ground_truth,
+                enable_basic_refined_prompt=enable_basic_refined_prompt,
+                enable_lecturing_refined_prompt=enable_lecturing_refined_prompt)
 
 def generate_and_evaluate_llm_response(prompt_type="4shot", arguments=None):
     # Parse through the preprocessed json data contained in parsed_womdr_data/
@@ -425,15 +466,25 @@ def generate_and_evaluate_llm_response(prompt_type="4shot", arguments=None):
 
             existing_grades[scenario_id][interaction_id].setdefault("Ground Truth Answer", scenario_domain_and_problem_data[scenario_id]["Interactions"][interaction_id]["answer_data"])
 
+            # Set of transformation from the string parameter to the boolean parameter.
+            # It is this way because Popen needs string parameters which is in turn needed for parallel experiment running. 
             if arguments.ground_truth=="True": bool_ground_truth = True
             elif arguments.ground_truth=="False": bool_ground_truth = False
+
+            if arguments.enable_basic_refined_prompt=="True": bool_enable_basic_refined_prompt = True
+            elif arguments.enable_basic_refined_prompt=="False": bool_enable_basic_refined_prompt = False
+
+            if arguments.enable_lecturing_refined_prompt=="True": bool_enable_lecturing_refined_prompt = True
+            elif arguments.enable_lecturing_refined_prompt=="False": bool_enable_lecturing_refined_prompt = False
             # LLM outputs and LLM as a judge grade generation for one interaction within one scenario.
             grade_openai_deepinfra_models_one_interaction(model_dictionary=model_dictionary, 
                                                         existing_grades=existing_grades, 
                                                         scenario_id=scenario_id, 
                                                         interaction_id=interaction_id,
                                                         prompt_type=prompt_type,
-                                                        ground_truth=bool_ground_truth)
+                                                        ground_truth=bool_ground_truth,
+                                                        enable_basic_refined_prompt=bool_enable_basic_refined_prompt,
+                                                        enable_lecturing_refined_prompt=bool_enable_lecturing_refined_prompt)
             
         # Creating the grade files now.
         # Ensure that this json file by the name grades/deepseek_grades.json exists first.
@@ -456,6 +507,8 @@ def parse_arguments():
     else: prompt_type = "2shot"
     print(f"Prompt type is {prompt_type}") 
     print(f"The scenario index argument is {arguments.scenario_index}")
+    print(f"Enable basic refined prompt has been set to {arguments.enable_basic_refined_prompt}")
+    print(f"Enable lecturing refined prompt has been set to {arguments.enable_lecturing_refined_prompt}")
     return arguments, prompt_type
 
 def plot_correctness_scores(arguments):

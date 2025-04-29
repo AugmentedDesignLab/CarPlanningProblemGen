@@ -71,45 +71,16 @@ def process_womd_datapoint_for_mcq_gen(womd_datapoint):
     return facts, mcq_qa_information
 
 
-def obtain_and_write_data_smallest(start, end):
+def obtain_smallest_scenario_index(start, end):
     filesize = 100000
-    smallest_filename = ""
-    for filename in scenario_files[start:end]:
-        file_size = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)
+    smallest_scenario_index = 1
+    for index in range(len(scenario_files[start:end])):
+        file_size = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+scenario_files[start+index])
         if file_size < filesize: 
             filesize = file_size
-            smallest_filename = filename
-    #for filename in scenario_files[start:end]:
-    blocklist_match = False
-    final_preprocessed_data = {}
-    womd_datapoint = generate_womd_reasoning_datapoint(filename=smallest_filename)
-    id = womd_datapoint['sid']
-
-    # Add bad scenarios to the blocklist
-    for blocklist_id in scenario_blocklist:
-        if blocklist_id==id: 
-            blocklist_match = True
-    if blocklist_match==True:
-        return #skip this iteration
-    
-    facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
-    reference_context = facts["Facts about the static environment"]+facts["Facts about the ego vehicle in this environment"]+facts["Facts about the agents surrounding the ego vehicle in this environment"]
-    preprocessed_data = {}
-    preprocessed_data["Context"] = reference_context
-    preprocessed_data["Interactions"] = {}
-    for i in range(len(mcq_info)): #Iterate over the mcqs generated
-        original_qa_data = {}
-        reference_question = womd_datapoint['int_q'][i]
-        reference_answer = womd_datapoint['int_a'][i]
+            smallest_scenario_index = start+index
+    print(f"Smallest scenario index is {smallest_scenario_index}")
             
-        original_qa_data["reference_question"] = reference_question
-        original_qa_data["reference_answer"] = reference_answer
-        preprocessed_data["Interactions"]["Interactions_"+str(i)] = original_qa_data
-
-    final_preprocessed_data[str(id)] = preprocessed_data
-
-    with open("parsed_womdr_data/"+str(id)+".json", 'w') as file:
-        json.dump(final_preprocessed_data, file, indent=4)
 
 def transform_datapoint_to_qa_list(wmo_reasoning_datapoint):
     combined_qa_list = [] # A list that will combine all the QA lists in one datapoint. This 
@@ -360,16 +331,17 @@ def obtain_and_write_data_single_scenario(scenario_index):
 
 #From the initial 60 experiments:
 
-# scenario_index_list_small = [239, 562, 999, 2827, 475]
-# scenario_index_list_medium = [6, 254, 622, 136, 182]
-# scenario_index_list_large = [52, 13, 41, 102, 600]
+scenario_index_list_small = [239, 562, 999, 2827, 475]
+scenario_index_list_medium = [6, 254, 622, 136, 182]
+scenario_index_list_large = [52, 13, 41, 102, 600]
 
-# scenario_indices_all = scenario_index_list_small+scenario_index_list_medium+scenario_index_list_large
+scenario_indices_all = scenario_index_list_small+scenario_index_list_medium+scenario_index_list_large
 
-scenarios = [52]
 
-for scenario_index in scenarios:
+for scenario_index in scenario_indices_all:
     obtain_and_write_data_single_scenario(scenario_index)
+
+# obtain_smallest_scenario_index(0, 51855)
 
 
 # find_similar_data_emb_based(search_range_start=250, 
