@@ -10,11 +10,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from tqdm import tqdm
 from pathlib import Path
 
-scenario_files = os.listdir("../car_beh_gen/datasets/training.tar/training_2/training/")
+scenario_files = os.listdir("../training/")
 scenario_blocklist = []
 
 def generate_womd_reasoning_datapoint(filename):
-    with open('../car_beh_gen/datasets/training.tar/training_2/training/'+filename, 'r') as file:
+    with open('../training/'+filename, 'r') as file:
         data = json.loads(file.read())
         new_data_no_interactions = {
             'environment questions': data['env_q'],
@@ -75,7 +75,7 @@ def obtain_and_write_data_smallest(start, end):
     filesize = 100000
     smallest_filename = ""
     for filename in scenario_files[start:end]:
-        file_size = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+filename)
+        file_size = os.path.getsize('../training/'+filename)
         if file_size < filesize: 
             filesize = file_size
             smallest_filename = filename
@@ -319,7 +319,7 @@ def obtain_and_write_data(start, end):
         facts, mcq_info = process_womd_datapoint_for_mcq_gen(womd_datapoint=womd_datapoint)
         reference_context = facts["Facts about the static environment"]+facts["Facts about the ego vehicle in this environment"]+facts["Facts about the agents surrounding the ego vehicle in this environment"]
         preprocessed_data = {}
-        preprocessed_data["Size"] = os.path.getsize('../car_beh_gen/datasets/training.tar/training_2/training/'+scenario_files[start+i])
+        preprocessed_data["Size"] = os.path.getsize('../training/'+scenario_files[start+i])
         preprocessed_data["Context"] = reference_context
 
         context_word_count = len(reference_context.split(" "))
@@ -366,7 +366,7 @@ def obtain_and_write_data_single_scenario(scenario_index):
 
 # scenario_indices_all = scenario_index_list_small+scenario_index_list_medium+scenario_index_list_large
 
-scenarios = [52]
+scenarios = [239, 562, 999, 2827, 475, 6, 254, 622, 136, 182, 52, 13, 41, 102, 600]
 
 for scenario_index in scenarios:
     obtain_and_write_data_single_scenario(scenario_index)
